@@ -13,6 +13,7 @@ import { CompetitorPath } from "@/components/CompetitorPath";
 import { FindingSummary } from "@/components/FindingSummary";
 import { Button } from "@/components/ui/button";
 import { firstMajorRound } from "@/lib/rounds";
+import { runLabel } from "@/lib/runs";
 import type { ExperimentPaper } from "@/types/contracts";
 
 export function FindingPaper({ paper }: { paper: ExperimentPaper }) {
@@ -30,7 +31,7 @@ export function FindingPaper({ paper }: { paper: ExperimentPaper }) {
               size="sm"
               onClick={() => setSelectedRound(citation.round)}
             >
-              {citation.agent_id} · R{citation.round} · {citation.run_id}
+              {citation.agent_id} · R{citation.round} · {runLabel(citation.run_id)}
             </Button>
           </li>
         ))}

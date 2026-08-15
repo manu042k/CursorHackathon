@@ -12,8 +12,8 @@ const css = fs.readFileSync(path.join(root, "src/app/paper.css"), "utf8");
 const checks = [
   [chart.includes('metric="share"'), "share figure"],
   [chart.includes('metric="mrr"'), "mrr figure"],
-  [chart.includes("Run A · $"), "series name A"],
-  [chart.includes("Run B · $"), "series name B"],
+  [chart.includes("RUN_LABEL.A") && chart.includes(" · ${base}"), "series name Current"],
+  [chart.includes("RUN_LABEL.B") && chart.includes(" · ${forked}"), "series name Changed"],
   [chart.includes("applies_from_round"), "intervention marker"],
   [chart.includes("R{round}"), "round pills"],
   [chart.includes("ArrowLeft"), "left key"],

@@ -32,7 +32,7 @@ export function RosterConfirm({
     <section className="roster-preview mx-auto max-w-5xl px-6 py-10" aria-label="Confirm roster">
       <h1 className="text-3xl font-semibold tracking-tight">Confirm the market</h1>
       <p className="mt-2 mb-6 text-muted-foreground">
-        Five users, one competitor, one analyst. Same roster on Run A and Run B.
+        Five users, one competitor, one analyst. Same roster on Current and Changed.
       </p>
       <Table className="research-table">
         <TableHeader>

@@ -12,7 +12,7 @@ const checks = [
   [sse.includes("EventSource"), "subscribes to events"],
   [sse.includes("/events"), "/events path"],
   [progress.includes("round {latest.round} / {rounds}"), "round index"],
-  [progress.includes("Run A") && progress.includes("Run B"), "two columns"],
+  [progress.includes("RUN_LABEL.A") && progress.includes("RUN_LABEL.B"), "two columns"],
   [form.includes("router.push") && form.includes("/experiments/"), "navigate on complete"],
   [progress.includes("failed") && !form.includes("router.push(`/experiments/${failed"), "failed stays"],
   [!form.includes("setInterval") && !sse.includes("setInterval") && !progress.includes("setInterval"), "no setInterval"],

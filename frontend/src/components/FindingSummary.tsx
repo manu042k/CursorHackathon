@@ -1,4 +1,5 @@
 import { firstMajorRound } from "@/lib/rounds";
+import { RUN_LABEL } from "@/lib/runs";
 import type { ExperimentPaper } from "@/types/contracts";
 
 function fmtPp(value: number): string {
@@ -30,14 +31,15 @@ export function FindingSummary({ paper }: { paper: ExperimentPaper }) {
       </p>
       <ul>
         <li>
-          Share {verb(share, "rose", "fell", "held")} {fmtPp(share)} on Run B versus baseline.
+          Share {verb(share, "rose", "fell", "held")} {fmtPp(share)} on {RUN_LABEL.B} versus{" "}
+          {RUN_LABEL.A}.
         </li>
         <li>
           MRR {verb(mrr, "rose", "fell", "held")} {mrr >= 0 ? "+$" : "−$"}
           {mrrAbs}.
         </li>
         <li>
-          {left} buyer{left === 1 ? "" : "s"} left on B. The gap opened at R{split}.
+          {left} buyer{left === 1 ? "" : "s"} left on {RUN_LABEL.B}. The gap opened at R{split}.
         </li>
       </ul>
       <p className="finding__summary-claim">{paper.summary_narrative.text}</p>

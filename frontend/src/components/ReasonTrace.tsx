@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { OrchestrationGraph } from "@/components/OrchestrationGraph";
 import { Button } from "@/components/ui/button";
 import { forkedPrice } from "@/lib/price";
+import { runLabel } from "@/lib/runs";
 import type { AgentLog, ExperimentPaper, RosterAgent, RoundCompleteEvent } from "@/types/contracts";
 
 function byAgent(logs: AgentLog[], round: number): Map<string, AgentLog> {
@@ -94,7 +95,9 @@ export function ReasonTrace({
           person, two prices, two decisions.
         </p>
       ) : (
-        <p className="agent-console-card__why">A and B still agree this round. The worlds have not split yet.</p>
+        <p className="agent-console-card__why">
+          Current and Changed still agree this round. The worlds have not split yet.
+        </p>
       )}
       <ul className="agent-console-card__citations">
         {paper.summary_narrative.citations.map((citation) => (
@@ -104,7 +107,7 @@ export function ReasonTrace({
               className="button-secondary button-secondary--on-dark"
               onClick={() => scrollTo(citation.agent_id, citation.round)}
             >
-              {citation.agent_id} · R{citation.round} · {citation.run_id}
+              {citation.agent_id} · R{citation.round} · {runLabel(citation.run_id)}
             </button>
           </li>
         ))}
@@ -125,11 +128,15 @@ export function ReasonTrace({
                 {wtpOf(byId.get(agentId)) ? <span>{wtpOf(byId.get(agentId))}</span> : null}
               </h3>
               <p className="agent-console-card__run">
-                <span className={`decision-chip decision-chip--${logA?.decision ?? "none"}`}>A {logA?.decision ?? "—"}</span>
+                <span className={`decision-chip decision-chip--${logA?.decision ?? "none"}`}>
+                  {runLabel("A")} {logA?.decision ?? "—"}
+                </span>
                 {logA?.reason}
               </p>
               <p className="agent-console-card__run">
-                <span className={`decision-chip decision-chip--${logB?.decision ?? "none"}`}>B {logB?.decision ?? "—"}</span>
+                <span className={`decision-chip decision-chip--${logB?.decision ?? "none"}`}>
+                  {runLabel("B")} {logB?.decision ?? "—"}
+                </span>
                 {logB?.reason}
               </p>
             </article>

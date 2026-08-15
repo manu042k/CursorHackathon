@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, type KeyboardEvent } from "react";
+import { RUN_LABEL } from "@/lib/runs";
 
 export type ChartMetric = "share" | "mrr";
 
@@ -168,7 +169,7 @@ export function TrajectoryChart({
           "Waiting for the first round…"
         ) : (
           <>
-            R{selectedRound} · A {fmt(metric, aVal)} · B {fmt(metric, bVal)} · gap{" "}
+            R{selectedRound} · {RUN_LABEL.A} {fmt(metric, aVal)} · {RUN_LABEL.B} {fmt(metric, bVal)} · gap{" "}
             <strong>
               {gap > 0 ? "+" : ""}
               {metric === "share" ? `${Math.round(gap)}pp` : `$${Math.round(gap).toLocaleString()}`}

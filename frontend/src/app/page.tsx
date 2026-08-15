@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { RUN_LABEL } from "@/lib/runs";
 import "./landing.css";
 
 const STEPS = [
@@ -72,7 +73,7 @@ export default function HomePage() {
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-sm font-medium">Live orchestration</CardTitle>
             <Badge variant="outline" className="border-white/20 font-normal text-white/70">
-              Run B · round 3 / 4
+              {RUN_LABEL.B} · round 3 / 4
             </Badge>
           </CardHeader>
           <CardContent>
@@ -95,13 +96,13 @@ export default function HomePage() {
             <ul className="landing-console__agents">
               <li>
                 <span>buyer_3</span>
-                <em className="is-stay">A stay</em>
-                <em className="is-churn">B churn</em>
+                <em className="is-stay">{RUN_LABEL.A} stay</em>
+                <em className="is-churn">{RUN_LABEL.B} churn</em>
               </li>
               <li>
                 <span>competitor</span>
-                <em className="is-stay">A hold</em>
-                <em className="is-match">B match</em>
+                <em className="is-stay">{RUN_LABEL.A} hold</em>
+                <em className="is-match">{RUN_LABEL.B} match</em>
               </li>
             </ul>
           </CardContent>
@@ -115,11 +116,11 @@ export default function HomePage() {
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div className="flex items-center justify-between border-t pt-3">
-              <span className="text-muted-foreground">Run A</span>
+              <span className="text-muted-foreground">{RUN_LABEL.A}</span>
               <span>Price stays put</span>
             </div>
             <div className="flex items-center justify-between border-t pt-3">
-              <span className="text-muted-foreground">Run B</span>
+              <span className="text-muted-foreground">{RUN_LABEL.B}</span>
               <span>Only price changes</span>
             </div>
             <div className="flex items-center justify-between border-t pt-3">
@@ -168,17 +169,17 @@ export default function HomePage() {
         <div className="mx-auto max-w-5xl px-6 py-16">
           <p className="text-sm font-medium text-muted-foreground">How a run works</p>
           <h2 className="mt-2 max-w-xl text-3xl font-semibold tracking-tight">
-            Baseline A. Intervention B. Same seed.
+            Current world. Changed world. Same seed.
           </h2>
           <div className="mt-8 grid gap-6 md:grid-cols-3">
             <div>
-              <p className="font-medium">Run A</p>
+              <p className="font-medium">{RUN_LABEL.A}</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 Price stays put. The roster plays the market as written.
               </p>
             </div>
             <div>
-              <p className="font-medium">Run B</p>
+              <p className="font-medium">{RUN_LABEL.B}</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 Only the price changes. Everything else is frozen.
               </p>

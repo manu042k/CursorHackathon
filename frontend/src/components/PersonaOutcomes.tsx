@@ -1,4 +1,5 @@
 import type { AgentLog, ExperimentPaper, RosterAgent } from "@/types/contracts";
+import { RUN_LABEL } from "@/lib/runs";
 import {
   Table,
   TableBody,
@@ -28,8 +29,8 @@ export function PersonaOutcomes({ paper }: { paper: ExperimentPaper }) {
         <TableHeader>
           <TableRow>
             <TableHead>Buyer</TableHead>
-            <TableHead>Run A</TableHead>
-            <TableHead>Run B</TableHead>
+            <TableHead>{RUN_LABEL.A}</TableHead>
+            <TableHead>{RUN_LABEL.B}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

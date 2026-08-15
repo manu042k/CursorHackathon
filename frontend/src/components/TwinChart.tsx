@@ -2,6 +2,7 @@
 
 import { type KeyboardEvent } from "react";
 import { TrajectoryChart } from "@/components/TrajectoryChart";
+import { RUN_LABEL } from "@/lib/runs";
 import { forkedPrice } from "@/lib/price";
 import type { ExperimentPaper } from "@/types/contracts";
 
@@ -33,9 +34,9 @@ export function TwinChart({ paper, selectedRound, onSelectRound }: Props) {
       <div className="twin-chart__toolbar">
         <p className="twin-chart__legend">
           <span className="twin-chart__swatch twin-chart__swatch--a" />
-          Run A · ${base}
+          {RUN_LABEL.A} · ${base}
           <span className="twin-chart__swatch twin-chart__swatch--b" />
-          Run B · ${forked}
+          {RUN_LABEL.B} · ${forked}
         </p>
       </div>
       <div className="twin-chart__figures">

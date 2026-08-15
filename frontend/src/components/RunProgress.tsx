@@ -4,6 +4,7 @@ import { TrajectoryChart } from "@/components/TrajectoryChart";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RUN_LABEL, runLabel } from "@/lib/runs";
 import { RUN_ROUNDS } from "@/types/contracts";
 import type { DecisionEvent, RoundCompleteEvent } from "@/types/contracts";
 
@@ -46,7 +47,7 @@ export function RunProgress({
       {latest ? (
         <p className="run-progress__now">
           <Badge variant="outline" className="w-fit font-mono font-normal tracking-wide">
-            Run {latest.run_id} · round {latest.round} / {rounds}
+            {runLabel(latest.run_id)} · round {latest.round} / {rounds}
           </Badge>
           <span>
             share {latest.share.toFixed(0)}% · MRR ${latest.mrr.toFixed(0)}
@@ -55,7 +56,7 @@ export function RunProgress({
       ) : latestDecision ? (
         <p className="run-progress__now">
           <Badge variant="outline" className="w-fit font-mono font-normal tracking-wide">
-            Run {latestDecision.run_id} · {latestDecision.agent_id}
+            {runLabel(latestDecision.run_id)} · {latestDecision.agent_id}
           </Badge>
           <span>deciding round {latestDecision.round}</span>
         </p>
@@ -89,7 +90,9 @@ export function RunProgress({
       <div className="run-progress__cols">
         <Card className="border-border">
           <CardHeader>
-            <CardTitle className="text-2xl">Run A · baseline ${basePrice}</CardTitle>
+            <CardTitle className="text-2xl">
+              {RUN_LABEL.A} · no change · ${basePrice}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <ol>
@@ -103,7 +106,9 @@ export function RunProgress({
         </Card>
         <Card className="border-border">
           <CardHeader>
-            <CardTitle className="text-2xl">Run B · ${forkedPrice}</CardTitle>
+            <CardTitle className="text-2xl">
+              {RUN_LABEL.B} · ${forkedPrice}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <ol>
@@ -126,7 +131,7 @@ export function RunProgress({
             {live.map((item, index) => (
               <li key={`${item.run_id}-${item.agent_id}-${item.round}-${index}`}>
                 <p className="live-reasons__meta">
-                  <span>Run {item.run_id}</span>
+                  <span>{runLabel(item.run_id)}</span>
                   <span>R{item.round}</span>
                   <span>{item.agent_id}</span>
                   <em className={`decision-chip decision-chip--${item.decision}`}>{item.decision}</em>
