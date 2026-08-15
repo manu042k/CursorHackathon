@@ -19,7 +19,7 @@ const checks = [
   [form.includes('name="rounds"'), "US-C8: Method strip must expose a rounds input"],
   [form.includes("price_change"), "only price_change"],
   [!form.includes("marketing_spend"), "no unfinished interventions"],
-  [form.includes("Run this experiment"), "primary CTA"],
+  [form.includes("Begin research"), "primary CTA"],
   [!form.includes("Open the prepared Grok Bot paper"), "no fixture door"],
   [!form.includes("grok-bot-seed-42"), "no golden paper href"],
   [form.includes("createExperiment"), "POST create"],

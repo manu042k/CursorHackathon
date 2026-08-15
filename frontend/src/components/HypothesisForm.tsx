@@ -13,17 +13,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { RosterConfirm } from "@/components/RosterConfirm";
 import { ApiDownError, createExperiment, getExperiment, getHealth, startExperiment, waitRosterReady } from "@/lib/api";
@@ -31,7 +23,6 @@ import type {
   Adapter,
   CreateExperimentRequest,
   DecisionEvent,
-  PriceSensitivity,
   Roster,
   RoundCompleteEvent,
 } from "@/types/contracts";
@@ -42,6 +33,9 @@ const METHOD = {
   market_size: 30,
   competitor_count: 1,
   variable_type: "price_change" as const,
+  adapter: "fixture" as Adapter,
+  random_seed: 42,
+  buyer_price_sensitivity: "medium" as const,
 };
 
 function clampRounds(value: number): number {
@@ -59,7 +53,6 @@ export function HypothesisForm() {
   const [productDescription, setProductDescription] = useState("");
   const [currentPrice, setCurrentPrice] = useState("");
   const [competitorPrice, setCompetitorPrice] = useState("");
-  const [sensitivity, setSensitivity] = useState<PriceSensitivity | "">("");
   const [delta, setDelta] = useState("");
   const [fromRound, setFromRound] = useState("");
   const [rounds, setRounds] = useState(4);
@@ -72,7 +65,6 @@ export function HypothesisForm() {
   const [ticks, setTicks] = useState<RoundCompleteEvent[]>([]);
   const [decisions, setDecisions] = useState<DecisionEvent[]>([]);
   const [failed, setFailed] = useState<string | null>(null);
-  const [adapter, setAdapter] = useState<Adapter>("fixture");
   const [cursorReady, setCursorReady] = useState(false);
 
   useEffect(() => {
@@ -113,12 +105,24 @@ export function HypothesisForm() {
 
   const price = Number.parseFloat(currentPrice);
   const roundN = clampRound(Number.parseInt(fromRound, 10), rounds);
+  const adapter: Adapter = cursorReady ? "cursor" : METHOD.adapter;
   const sentence = useMemo(() => {
     if (!productName.trim() || !Number.isFinite(price) || !delta.trim()) {
       return "Name the product and the one price change.";
     }
     return hypothesisSentence(productName.trim(), price, delta.trim(), roundN);
   }, [productName, price, delta, roundN]);
+
+  function resetToForm() {
+    setError(null);
+    setStartedId(null);
+    setExperimentId(null);
+    setRoster(null);
+    setTicks([]);
+    setDecisions([]);
+    setFailed(null);
+    setPending(false);
+  }
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -130,8 +134,8 @@ export function HypothesisForm() {
     setDecisions([]);
     setFailed(null);
     setPending(true);
-    if (!sensitivity || !Number.isFinite(price) || !Number.isFinite(Number.parseFloat(competitorPrice))) {
-      setError("Fill in the product, prices, and sensitivity.");
+    if (!Number.isFinite(price) || !Number.isFinite(Number.parseFloat(competitorPrice))) {
+      setError("Fill in the product and both prices.");
       setPending(false);
       return;
     }
@@ -142,9 +146,9 @@ export function HypothesisForm() {
       market_size: METHOD.market_size,
       competitor_count: METHOD.competitor_count,
       competitor_price: Number.parseFloat(competitorPrice),
-      buyer_price_sensitivity: sensitivity,
+      buyer_price_sensitivity: METHOD.buyer_price_sensitivity,
       rounds: clampRounds(rounds),
-      random_seed: Math.floor(Math.random() * 1_000_000_000),
+      random_seed: METHOD.random_seed,
       variable_type: METHOD.variable_type,
       variable_delta: delta.trim(),
       applies_from_round: roundN,
@@ -204,21 +208,38 @@ export function HypothesisForm() {
             {error}
           </Alert>
         ) : null}
-        <RosterConfirm roster={roster} pending={pending} onConfirm={() => void onConfirm()} />
+        <RosterConfirm
+          roster={roster}
+          pending={pending}
+          onConfirm={() => void onConfirm()}
+          onEdit={resetToForm}
+        />
       </div>
+    );
+  }
+
+  if (pending) {
+    return (
+      <section className="mx-auto max-w-5xl px-6 py-10">
+        <p className="text-sm text-muted-foreground">Research</p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Inferring the roster…</h1>
+        <p className="mt-2 text-muted-foreground">
+          Five users, one competitor, one analyst — then you confirm before analysis starts.
+        </p>
+      </section>
     );
   }
 
   return (
     <form className="mx-auto grid max-w-5xl gap-8 px-6 py-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]" onSubmit={onSubmit}>
       <div className="space-y-4 lg:sticky lg:top-20 lg:self-start">
-        <p className="text-sm text-muted-foreground">New experiment</p>
+        <p className="text-sm text-muted-foreground">You are testing</p>
         <h1 className="text-3xl font-semibold tracking-tight">{sentence}</h1>
         <p className="text-muted-foreground">
           Divergence is causal inside this simulation — not a market forecast.
         </p>
         <ButtonPrimary type="submit" disabled={pending}>
-          Run this experiment
+          Begin research
         </ButtonPrimary>
         {error ? (
           <Alert className="border-destructive text-destructive">
@@ -229,7 +250,7 @@ export function HypothesisForm() {
       <Card>
         <CardHeader>
           <CardTitle>Product</CardTitle>
-          <CardDescription>Enter the product and prices.</CardDescription>
+          <CardDescription>Name, what it does, and the two prices.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -279,22 +300,6 @@ export function HypothesisForm() {
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="buyer_price_sensitivity">Buyer price sensitivity</Label>
-            <Select
-              value={sensitivity || undefined}
-              onValueChange={(value) => setSensitivity(value as PriceSensitivity)}
-            >
-              <SelectTrigger id="buyer_price_sensitivity" className="w-full">
-                <SelectValue placeholder="Select" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="low">low</SelectItem>
-                <SelectItem value="medium">medium</SelectItem>
-                <SelectItem value="high">high</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </CardContent>
         <Separator />
         <CardHeader>
@@ -302,10 +307,9 @@ export function HypothesisForm() {
           <CardDescription>Only this differs between Run A (baseline) and Run B.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="variable_type">Type</Label>
-            <Input id="variable_type" name="variable_type" value="price_change" readOnly />
-          </div>
+          <p className="text-sm text-muted-foreground">
+            Type: <span className="font-medium text-foreground">price_change</span>
+          </p>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="variable_delta">Delta</Label>
@@ -333,7 +337,6 @@ export function HypothesisForm() {
               />
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">Try +20%, −10%, or +5. Rounds are 1–{rounds}.</p>
         </CardContent>
         <Separator />
         <CardContent className="space-y-3" aria-label="Method">
@@ -351,20 +354,11 @@ export function HypothesisForm() {
             />
           </div>
           <p className="text-sm text-muted-foreground">
-            {rounds} rounds · 30 buyers · 1 competitor · 0 other variables
+            {rounds} rounds · seed {METHOD.random_seed} · 5 users · 1 competitor · 0 other variables
           </p>
-          {cursorReady ? (
-            <label className="flex items-center gap-2 text-sm">
-              <Checkbox
-                checked={adapter === "cursor"}
-                onCheckedChange={(checked) => setAdapter(checked === true ? "cursor" : "fixture")}
-              />
-              Use Cursor SDK
-            </label>
-          ) : null}
           <Receipt
             receipt={{
-              random_seed: 0,
+              random_seed: METHOD.random_seed,
               prompt_hash: "—",
               roster_hash: "—",
               other_variables_changed: 0,
