@@ -186,3 +186,22 @@ class CompleteEvent(FrozenModel):
 
 class FailedEvent(FrozenModel):
     error: str
+
+
+class AgentDecisionRequest(FrozenModel):
+    experiment_id: str = "acme-seed-42"
+    run_id: RunId
+    agent_id: str
+    round: int
+    current_price: float
+    competitor_price: float = 45
+    persona: dict[str, Any] = Field(default_factory=dict)
+    status: str = "subscribed"
+    history_summary: str = ""
+
+
+class AgentDecision(FrozenModel):
+    decision: str
+    reason: str
+    confidence: float
+
