@@ -23,3 +23,6 @@ data/experiments/exp_*/
 .cursor/skills/
 .cursor/commands/archie.md
 
+# Local-only data (never share with the team repo)
+.local-data/
+
