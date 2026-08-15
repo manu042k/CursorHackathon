@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FindingPaper } from "@/components/FindingPaper";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import golden from "@/data/grok-bot-seed-42.json";
 import { ApiDownError, getExperiment } from "@/lib/api";
 import { subscribeExperimentEvents } from "@/lib/sse";
@@ -77,42 +79,47 @@ export function PaperLoader({ id }: { id: string }) {
 
   if (view.kind === "loading") {
     return (
-      <main className="finding">
-        <p className="shell-kicker">Finding</p>
-        <div className="skeleton" aria-hidden="true">
-          <div className="skeleton__rule" />
-          <div className="skeleton__rule skeleton__rule--wide" />
-          <div className="skeleton__rule" />
+      <main className="mx-auto max-w-5xl px-6 py-10">
+        <p className="text-sm text-muted-foreground">Finding</p>
+        <div className="skeleton mt-4 space-y-4" aria-hidden="true">
+          <Skeleton className="skeleton__rule h-4 w-2/5" />
+          <Skeleton className="skeleton__rule skeleton__rule--wide h-8 w-4/5" />
+          <Skeleton className="skeleton__rule h-4 w-2/5" />
+          <div className="grid grid-cols-3 gap-4 pt-4">
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+          </div>
         </div>
       </main>
     );
   }
   if (view.kind === "failed") {
     return (
-      <main className="finding">
-        <p className="shell-kicker">Finding</p>
-        <h1 className="paper-header__title">This run failed</h1>
-        <p className="finding__error" role="alert">
+      <main className="mx-auto max-w-5xl space-y-4 px-6 py-10">
+        <p className="text-sm text-muted-foreground">Finding</p>
+        <h1 className="paper-header__title text-3xl font-semibold tracking-tight">This run failed</h1>
+        <p className="finding__error text-destructive" role="alert">
           {view.error}
         </p>
         <p className="finding__next">
-          <Link href="/new" className="button-primary">
-            New experiment
-          </Link>
+          <Button asChild>
+            <Link href="/new">New experiment</Link>
+          </Button>
         </p>
       </main>
     );
   }
   if (view.kind === "empty") {
     return (
-      <main className="finding">
-        <p className="shell-kicker">Finding</p>
-        <h1 className="paper-header__title">No paper for {id}</h1>
-        <p>This id is not in the record. Numbers from Grok Bot are not shown.</p>
+      <main className="mx-auto max-w-5xl space-y-4 px-6 py-10">
+        <p className="text-sm text-muted-foreground">Finding</p>
+        <h1 className="paper-header__title text-3xl font-semibold tracking-tight">No paper for {id}</h1>
+        <p className="text-muted-foreground">This id is not in the record. Numbers from Grok Bot are not shown.</p>
         <p className="finding__next">
-          <Link href="/new" className="button-primary">
-            New experiment
-          </Link>
+          <Button asChild>
+            <Link href="/new">New experiment</Link>
+          </Button>
         </p>
       </main>
     );

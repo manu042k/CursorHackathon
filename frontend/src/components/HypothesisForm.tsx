@@ -5,6 +5,26 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ButtonPrimary } from "@/components/ButtonPrimary";
 import { Receipt } from "@/components/Receipt";
 import { RunProgress } from "@/components/RunProgress";
+import { Alert } from "@/components/ui/alert";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { ApiDownError, createExperiment, getExperiment, getHealth } from "@/lib/api";
 import type {
   Adapter,
@@ -150,39 +170,43 @@ export function HypothesisForm() {
   }
 
   return (
-    <form className="setup" onSubmit={onSubmit}>
-      <div className="setup__story">
-        <p className="setup__kicker">New experiment</p>
-        <h1 className="setup__sentence">{sentence}</h1>
-        <p className="setup__honesty">
+    <form className="mx-auto grid max-w-5xl gap-8 px-6 py-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]" onSubmit={onSubmit}>
+      <div className="space-y-4 lg:sticky lg:top-20 lg:self-start">
+        <p className="text-sm text-muted-foreground">New experiment</p>
+        <h1 className="text-3xl font-semibold tracking-tight">{sentence}</h1>
+        <p className="text-muted-foreground">
           Divergence is causal inside this simulation — not a market forecast.
         </p>
         <ButtonPrimary type="submit" disabled={pending}>
           Run this experiment
         </ButtonPrimary>
         {error ? (
-          <p className="setup__error" role="alert">
+          <Alert className="border-destructive text-destructive">
             {error}
-          </p>
+          </Alert>
         ) : null}
       </div>
-      <div className="setup__fields">
-        <fieldset>
-          <legend>Product</legend>
-          <p className="setup__group-hint">Enter the product and prices.</p>
-          <label>
-            Name
-            <input
+      <Card>
+        <CardHeader>
+          <CardTitle>Product</CardTitle>
+          <CardDescription>Enter the product and prices.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="product_name">Name</Label>
+            <Input
+              id="product_name"
               name="product_name"
               value={productName}
               onChange={(e) => setProductName(e.target.value)}
               placeholder="Product name"
               required
             />
-          </label>
-          <label>
-            Description
-            <textarea
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="product_description">Description</Label>
+            <Textarea
+              id="product_description"
               name="product_description"
               value={productDescription}
               onChange={(e) => setProductDescription(e.target.value)}
@@ -190,67 +214,74 @@ export function HypothesisForm() {
               rows={3}
               required
             />
-          </label>
-          <div className="setup__row">
-            <label>
-              Your price
-              <input
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="current_price">Your price</Label>
+              <Input
+                id="current_price"
                 name="current_price"
                 value={currentPrice}
                 onChange={(e) => setCurrentPrice(e.target.value)}
                 inputMode="decimal"
                 required
               />
-            </label>
-            <label>
-              Competitor price
-              <input
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="competitor_price">Competitor price</Label>
+              <Input
+                id="competitor_price"
                 name="competitor_price"
                 value={competitorPrice}
                 onChange={(e) => setCompetitorPrice(e.target.value)}
                 inputMode="decimal"
                 required
               />
-            </label>
+            </div>
           </div>
-          <label>
-            Buyer price sensitivity
-            <select
-              name="buyer_price_sensitivity"
-              value={sensitivity}
-              onChange={(e) => setSensitivity(e.target.value as PriceSensitivity)}
-              required
+          <div className="space-y-2">
+            <Label htmlFor="buyer_price_sensitivity">Buyer price sensitivity</Label>
+            <Select
+              value={sensitivity || undefined}
+              onValueChange={(value) => setSensitivity(value as PriceSensitivity)}
             >
-              <option value="" disabled>
-                Select
-              </option>
-              <option value="low">low</option>
-              <option value="medium">medium</option>
-              <option value="high">high</option>
-            </select>
-          </label>
-        </fieldset>
-        <fieldset>
-          <legend>The one change</legend>
-          <p className="setup__group-hint">Only this differs between Run A (baseline) and Run B.</p>
-          <label>
-            Type
-            <input name="variable_type" value="price_change" readOnly />
-          </label>
-          <div className="setup__row">
-            <label>
-              Delta
-              <input
+              <SelectTrigger id="buyer_price_sensitivity" className="w-full">
+                <SelectValue placeholder="Select" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">low</SelectItem>
+                <SelectItem value="medium">medium</SelectItem>
+                <SelectItem value="high">high</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+        <Separator />
+        <CardHeader>
+          <CardTitle>The one change</CardTitle>
+          <CardDescription>Only this differs between Run A (baseline) and Run B.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="variable_type">Type</Label>
+            <Input id="variable_type" name="variable_type" value="price_change" readOnly />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="variable_delta">Delta</Label>
+              <Input
+                id="variable_delta"
                 name="variable_delta"
                 value={delta}
                 onChange={(e) => setDelta(e.target.value)}
                 placeholder="+20%"
                 required
               />
-            </label>
-            <label>
-              From round
-              <input
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="applies_from_round">From round</Label>
+              <Input
+                id="applies_from_round"
                 name="applies_from_round"
                 value={fromRound}
                 onChange={(e) => setFromRound(e.target.value)}
@@ -260,21 +291,21 @@ export function HypothesisForm() {
                 max={RUN_ROUNDS}
                 required
               />
-            </label>
+            </div>
           </div>
-          <p className="setup__field-hint">Try +20%, −10%, or +5. Rounds are 1–{RUN_ROUNDS}.</p>
-        </fieldset>
-        <div className="method-strip" aria-label="Method">
-          <p className="method-strip__label">Method</p>
-          <p className="setup__group-hint">
+          <p className="text-xs text-muted-foreground">Try +20%, −10%, or +5. Rounds are 1–{RUN_ROUNDS}.</p>
+        </CardContent>
+        <Separator />
+        <CardContent className="space-y-3" aria-label="Method">
+          <p className="text-sm font-medium">Method</p>
+          <p className="text-sm text-muted-foreground">
             {RUN_ROUNDS} rounds · 30 buyers · 1 competitor · 0 other variables
           </p>
           {cursorReady ? (
-            <label className="method-strip__cursor">
-              <input
-                type="checkbox"
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox
                 checked={adapter === "cursor"}
-                onChange={(e) => setAdapter(e.target.checked ? "cursor" : "fixture")}
+                onCheckedChange={(checked) => setAdapter(checked === true ? "cursor" : "fixture")}
               />
               Use Cursor SDK
             </label>
@@ -291,8 +322,8 @@ export function HypothesisForm() {
               tools: [],
             }}
           />
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </form>
   );
 }

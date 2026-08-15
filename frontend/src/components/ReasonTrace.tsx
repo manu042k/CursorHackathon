@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { OrchestrationGraph } from "@/components/OrchestrationGraph";
+import { Button } from "@/components/ui/button";
 import { forkedPrice } from "@/lib/price";
 import type { AgentLog, ExperimentPaper, RosterAgent, RoundCompleteEvent } from "@/types/contracts";
 
@@ -65,9 +66,14 @@ export function ReasonTrace({
         <p>
           Round {selectedRound} · {everyone ? "everyone" : "only decisions that differed"}
         </p>
-        <button type="button" className="button-secondary button-secondary--on-dark" onClick={() => setEveryone((v) => !v)}>
+        <Button
+          type="button"
+          variant="link"
+          className="button-secondary button-secondary--on-dark h-auto p-0 text-primary-foreground"
+          onClick={() => setEveryone((v) => !v)}
+        >
           {everyone ? "Show differences" : "Show everyone"}
-        </button>
+        </Button>
       </header>
       <OrchestrationGraph
         round={selectedRound}
