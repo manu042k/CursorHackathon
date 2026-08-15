@@ -1,13 +1,15 @@
-"""US-B3: FastAPI create + fetch paper. CORS for the Next app."""
+"""US-B3/B5: FastAPI create, paper fetch, and SSE progress."""
 
 from __future__ import annotations
 
 import asyncio
+import json
 import threading
 import uuid
 
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 
 from app.agents.fixture import FixtureAdapter
 from app.attribution import attribute_result
@@ -32,9 +34,27 @@ app.state.adapter_factory = lambda: FixtureAdapter()
 def _execute(experiment_id: str, body: CreateExperimentRequest) -> None:
     registry: ExperimentRegistry = app.state.registry
     registry.set_status(experiment_id, Status.running_a)
+
+    def on_round(run_id, round_n, share, mrr):
+        registry.append_event(
+            experiment_id,
+            "round_complete",
+            {
+                "run_id": run_id.value,
+                "round": round_n,
+                "share": share,
+                "mrr": mrr,
+            },
+        )
+
     try:
         result = asyncio.run(
-            run_twin(body, experiment_id, app.state.adapter_factory())
+            run_twin(
+                body,
+                experiment_id,
+                app.state.adapter_factory(),
+                on_round=on_round,
+            )
         )
         registry.set_status(
             experiment_id,
@@ -49,9 +69,13 @@ def _execute(experiment_id: str, body: CreateExperimentRequest) -> None:
         registry.put_paper(paper)
         if result.error:
             registry.errors[experiment_id] = result.error
+            registry.append_event(experiment_id, "failed", {"error": result.error})
+        else:
+            registry.append_event(experiment_id, "complete", {"id": experiment_id})
     except Exception as exc:
         registry.set_status(experiment_id, Status.failed)
         registry.errors[experiment_id] = str(exc)
+        registry.append_event(experiment_id, "failed", {"error": str(exc)})
 
 
 @app.post("/experiments", status_code=202, response_model=CreateExperimentResponse)
@@ -81,6 +105,28 @@ def get_experiment(experiment_id: str, response: Response):
     if paper is not None:
         return paper.model_dump(mode="json")
     raise HTTPException(status_code=404, detail="experiment not found")
+
+
+@app.get("/experiments/{experiment_id}/events")
+async def experiment_events(experiment_id: str):
+    registry: ExperimentRegistry = app.state.registry
+    items, _done = registry.snapshot_events(experiment_id)
+    if experiment_id not in registry.status and not items:
+        raise HTTPException(status_code=404, detail="experiment not found")
+
+    async def generate():
+        idx = 0
+        while True:
+            batch, finished = registry.snapshot_events(experiment_id)
+            while idx < len(batch):
+                name, data = batch[idx]
+                idx += 1
+                yield f"event: {name}\ndata: {json.dumps(data)}\n\n"
+            if finished:
+                break
+            await asyncio.sleep(0.05)
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
 
 
 @app.get("/experiments/{experiment_id}/artifacts/{name}")
