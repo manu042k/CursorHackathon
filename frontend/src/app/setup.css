@@ -87,13 +87,6 @@
   color: var(--color-muted);
 }
 
-.method-strip p:last-child {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: var(--text-caption);
-  letter-spacing: 0.28px;
-}
-
 .button-secondary {
   color: var(--color-ink);
   text-decoration: underline;

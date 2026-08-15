@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import { ButtonPrimary } from "@/components/ButtonPrimary";
+import { Receipt } from "@/components/Receipt";
 import { ApiDownError, createExperiment } from "@/lib/api";
 import { hypothesisSentence } from "@/lib/price";
 import type { CreateExperimentRequest } from "@/types/contracts";
@@ -153,9 +154,18 @@ export function HypothesisForm() {
         </fieldset>
         <div className="method-strip" aria-label="Method">
           <p className="method-strip__label">Method</p>
-          <p>
-            8 rounds · seed {seed} · 0 other variables
-          </p>
+          <Receipt
+            receipt={{
+              random_seed: seed,
+              prompt_hash: "—",
+              roster_hash: "—",
+              other_variables_changed: 0,
+              adapter: "fixture",
+              runtime: "local",
+              model: "—",
+              tools: [],
+            }}
+          />
         </div>
       </div>
     </form>
