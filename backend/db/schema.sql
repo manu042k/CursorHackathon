@@ -4,7 +4,7 @@
 
 DO $$ BEGIN
   CREATE TYPE experiment_status AS ENUM (
-    'created', 'running_a', 'running_b', 'attributing', 'complete', 'failed'
+    'created', 'researching', 'roster_ready', 'running_a', 'running_b', 'attributing', 'complete', 'failed'
   );
 EXCEPTION
   WHEN duplicate_object THEN NULL;
@@ -19,6 +19,8 @@ END $$;
 DO $$ BEGIN
   CREATE TYPE event_type AS ENUM (
     'experiment.created',
+    'research.started',
+    'research.completed',
     'roster.frozen',
     'run.started',
     'round.opened',

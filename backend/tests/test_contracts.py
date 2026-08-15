@@ -48,6 +48,8 @@ def test_adapter_status_and_decision_enums():
     assert {m.value for m in CompetitorDecision} == {"hold", "undercut", "match"}
     assert {m.value for m in Status} == {
         "created",
+        "researching",
+        "roster_ready",
         "running_a",
         "running_b",
         "attributing",

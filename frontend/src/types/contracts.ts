@@ -7,6 +7,8 @@ export type BuyerDecision = "stay" | "churn" | "switch";
 export type CompetitorDecision = "hold" | "undercut" | "match";
 export type Status =
   | "created"
+  | "researching"
+  | "roster_ready"
   | "running_a"
   | "running_b"
   | "attributing"
@@ -18,6 +20,8 @@ export type Runtime = "local";
 export const ADAPTERS = ["cursor", "fixture"] as const satisfies readonly Adapter[];
 export const STATUSES = [
   "created",
+  "researching",
+  "roster_ready",
   "running_a",
   "running_b",
   "attributing",

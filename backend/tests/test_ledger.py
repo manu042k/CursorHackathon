@@ -13,7 +13,7 @@ from app.main import app
 from app.registry import ExperimentRegistry
 from app.twin_runner import run_twin
 
-from tests.test_http_experiments import PAYLOAD
+from tests.test_http_experiments import PAYLOAD, _wait_roster_ready
 
 
 def _grok() -> CreateExperimentRequest:
@@ -73,6 +73,9 @@ def test_database_down_fails_experiment(tmp_path, monkeypatch):
     client = TestClient(app)
     created = client.post("/experiments", json=PAYLOAD)
     experiment_id = created.json()["id"]
+    _wait_roster_ready(client, experiment_id)
+    started = client.post(f"/experiments/{experiment_id}/start")
+    assert started.status_code == 202
     deadline = time.time() + 5
     while time.time() < deadline:
         if app.state.registry.status.get(experiment_id) == Status.failed:

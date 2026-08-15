@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from app.agents.fixture import FixtureAdapter
 from app.main import app
 from app.registry import ExperimentRegistry
-from tests.test_http_experiments import PAYLOAD, _wait_paper
+from tests.test_http_experiments import PAYLOAD, _start_after_roster, _wait_paper
 
 
 def test_health_and_paper_disclose_adapter(tmp_path, monkeypatch):
@@ -17,7 +17,7 @@ def test_health_and_paper_disclose_adapter(tmp_path, monkeypatch):
     health = client.get("/health").json()
     assert health["ok"] is True
     assert health["adapter"] == "fixture"
-    created = client.post("/experiments", json=PAYLOAD)
-    paper = _wait_paper(client, created.json()["id"]).json()
+    experiment_id = _start_after_roster(client)
+    paper = _wait_paper(client, experiment_id).json()
     assert paper["receipt"]["adapter"] == "fixture"
     assert paper["experiment"]["adapter"] == "fixture"
