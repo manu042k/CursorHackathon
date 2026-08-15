@@ -64,6 +64,120 @@
   color: var(--color-deep-green);
 }
 
+.twin-chart {
+  margin: 0 0 var(--space-section);
+  outline: none;
+}
+
+.twin-chart__toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-md);
+}
+
+.twin-chart__legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin: 0;
+  font-size: var(--text-caption);
+  color: var(--color-slate);
+}
+
+.twin-chart__swatch {
+  width: 12px;
+  height: 2px;
+  display: inline-block;
+  margin-left: var(--space-md);
+}
+
+.twin-chart__swatch--a {
+  background: var(--color-ink);
+}
+
+.twin-chart__swatch--b {
+  background: var(--color-action-blue);
+}
+
+.twin-chart__toggle button {
+  background: none;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  padding: 6px 12px;
+  font-size: var(--text-button);
+  color: var(--color-slate);
+  cursor: pointer;
+}
+
+.twin-chart__toggle button.is-active {
+  color: var(--color-ink);
+  border-bottom-color: var(--color-ink);
+}
+
+.twin-chart__svg {
+  width: 100%;
+  height: auto;
+}
+
+.twin-chart__axis {
+  stroke: var(--color-hairline);
+  stroke-width: 1;
+}
+
+.twin-chart__marker {
+  stroke: var(--color-muted);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.twin-chart__line {
+  fill: none;
+  stroke-width: 1.5;
+}
+
+.twin-chart__line--a {
+  stroke: var(--color-ink);
+}
+
+.twin-chart__line--b {
+  stroke: var(--color-action-blue);
+}
+
+.twin-chart__dot--a {
+  fill: var(--color-ink);
+  stroke: var(--color-ink);
+}
+
+.twin-chart__dot--b {
+  fill: var(--color-action-blue);
+  stroke: var(--color-action-blue);
+}
+
+.round-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+}
+
+.round-pills__item {
+  border: 1px solid var(--color-hairline);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  border-radius: var(--radius-pill);
+  padding: 6px 12px;
+  font-size: var(--text-button);
+  cursor: pointer;
+}
+
+.round-pills__item.is-active {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border-color: var(--color-primary);
+}
+
 @media (max-width: 700px) {
   .metric-cards {
     grid-template-columns: 1fr;
