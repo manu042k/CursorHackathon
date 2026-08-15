@@ -4,7 +4,7 @@
 **Companion docs:** [`counterfactual-replay-spec.md`](counterfactual-replay-spec.md) (product + causal contract), [`DESIGN-Guide.md`](DESIGN-Guide.md) (web UI system)  
 **Live inference:** [Cursor Python SDK](https://cursor.com/docs/sdk/python) (`cursor-sdk`) — not a direct Grok HTTP client. Spec language about Grok 4.6 is the product metaphor; this architecture binds every live decision to `AsyncAgent.prompt`.  
 **Scope:** Layer 1 only — twin-run engine, frozen artifacts, inspectable paper UI. No calibration, no experiment grid, no Shapley.  
-**UI status:** Planned in §10. Not implemented. Do not scaffold `web/` until that section is the build brief.
+**UI status:** Implemented in `frontend/` per §10. Backend lives in `backend/` (not `api/` / `web/`). **Skipped:** US-A5 (generated roster, cutoff), US-D7 (export/print).
 
 This document is the build contract. If two tracks disagree, this file plus the spec win. Do not invent a second architecture during the day.
 
@@ -81,13 +81,13 @@ A user defines a product and **one** intervention. The system freezes a market o
 
 ### ADR-5 — Shared contract package, generated once
 
-**Decision:** Pydantic models in `api/` are the source of truth. FastAPI emits OpenAPI. Frontend consumes generated TypeScript types (`openapi-typescript` or a checked-in `contracts.ts` if generation is too slow).
+**Decision:** Pydantic models in `backend/` are the source of truth. FastAPI emits OpenAPI. Frontend consumes generated TypeScript types (`openapi-typescript` or a checked-in `contracts.ts` if generation is too slow).
 
 **Why:** Four people cannot verbally share JSON shapes. The first 45 minutes freeze `contracts.ts` even if codegen is not wired.
 
 ### ADR-6 — Design system is law for web
 
-**Decision:** All UI in `web/` follows `DESIGN-Guide.md` and `.cursor/rules/website-design.mdc`. Tokens live in `web/src/styles/tokens.css`. No Tailwind default blue, no shadows, no coral CTAs.
+**Decision:** All UI in `frontend/` follows `DESIGN-Guide.md` and `.cursor/rules/website-design.mdc`. Tokens live in `frontend/src/styles/tokens.css`. No Tailwind default blue, no shadows, no coral CTAs.
 
 ### ADR-7 — Cursor SDK for every live decision
 
@@ -95,7 +95,7 @@ A user defines a product and **one** intervention. The system freezes a market o
 
 **Why these three knobs:**
 
-1. **Python, not TypeScript.** `DecisionPort` and the twin runner already live in `api/`. A second Node agent process would split causality across two runtimes.
+1. **Python, not TypeScript.** `DecisionPort` and the twin runner already live in `backend/`. A second Node agent process would split causality across two runtimes.
 2. **`AsyncAgent.prompt`, not `create` + `send`.** Durable agents keep conversation memory. Memory across rounds — or worse, across Run A and Run B — breaks the causal claim. One-shot prompt creates, runs, waits, and disposes. Isolation is the method.
 3. **Local + `tools=[]`.** `cwd` is an isolated scratch directory per decision. No ambient `setting_sources`. No file edits to `run_a.json`. The experiment record is written only by `store.py`.
 
@@ -178,7 +178,8 @@ Frontend modules (Next.js) are pages + design-system components, not a second do
 ├── counterfactual-replay-spec.md
 ├── DESIGN-Guide.md
 ├── architecture.md                  ← this file
-├── api/
+├── README.md
+├── backend/
 │   ├── pyproject.toml               # fastapi, pydantic, cursor-sdk
 │   ├── app/
 │   │   ├── main.py                  # FastAPI app, CORS
@@ -206,7 +207,7 @@ Frontend modules (Next.js) are pages + design-system components, not a second do
 │       ├── test_attribution.py
 │       ├── test_twin_determinism.py
 │       └── test_narrative_grounding.py
-├── web/
+├── frontend/
 │   ├── package.json
 │   ├── src/
 │   │   ├── app/
@@ -227,6 +228,8 @@ Frontend modules (Next.js) are pages + design-system components, not a second do
             ├── run_b.json
             └── attribution.json
 ```
+
+**Local run:** `cd backend && DEFAULT_ADAPTER=fixture uvicorn app.main:app --port 8000` and `cd frontend && npm run dev` (port 3000). See `README.md`.
 
 **Golden paper:** Person B (or A+B) checks in `data/experiments/acme-seed-42/` as soon as a plausible twin-run exists — even from `FixtureAdapter`. Person D builds the entire dashboard against this folder and never waits on live Cursor.
 
@@ -545,7 +548,7 @@ data: {"error":"alignment_broken"}
 
 ## 10. Frontend — intuitive UI plan (Persons C and D)
 
-**Status: plan only. Do not scaffold `web/` until this section is agreed.** The Next.js app is not in the repo yet.
+**Status: implemented.** The Next.js app is `frontend/`. Two routes. No auth. No dashboard chrome.
 
 Two routes. No auth. No dashboard chrome. The UI is a short paper a stranger can read.
 
@@ -696,7 +699,7 @@ Follow `DESIGN-Guide.md`. This is an editorial experiment, not a product analyti
 | Roster | `research-table` | Rule-separated rows, not a card grid. |
 | Footer honesty | Micro copy | Inside this simulation only. |
 
-Tokens: `web/src/styles/tokens.css` from the guide. Fonts: Space Grotesk (display fallback), Inter (body), IBM Plex Mono (labels). No Geist, no default Next.js dark theme, no `prefers-color-scheme` invert to gray.
+Tokens: `frontend/src/styles/tokens.css` from the guide. Fonts: Space Grotesk (display fallback), Inter (body), IBM Plex Mono (labels). No Geist, no default Next.js dark theme, no `prefers-color-scheme` invert to gray.
 
 ### 10.3 Interaction spec
 
@@ -793,7 +796,7 @@ interface AgentLog {
 interface ExperimentPaper { /* §9.2 */ }
 ```
 
-Person B publishes a gist/file `web/src/types/contracts.ts` **and** matching Pydantic. Until then, A uses the Python models only; C/D use the TS file.
+Person B publishes a gist/file `frontend/src/types/contracts.ts` **and** matching Pydantic. Until then, A uses the Python models only; C/D use the TS file.
 
 ---
 
@@ -842,7 +845,7 @@ sequenceDiagram
 
 | Track | Role name | Owns on disk | Demo beat they must be able to show |
 |---|---|---|---|
-| **A** | Agent Runtime Engineer | `api/app/agents/*`, `cursor_client.py`, `roster/fixed_acme.py`, prompts | One buyer JSON in / one JSON out via `AsyncAgent.prompt` |
+| **A** | Agent Runtime Engineer | `backend/app/agents/*`, `cursor_client.py`, `roster/fixed_acme.py`, prompts | One buyer JSON in / one JSON out via `AsyncAgent.prompt` |
 | **B** | Twin Engine + API | `twin_runner`, `attribution`, `store`, `http`, `contracts.py` | `GET` paper JSON for Acme with hashes and 0 other vars |
 | **C** | Setup & Shell | `web` layout, tokens, `/`, receipt, SSE progress | Acme form + receipt + “running round 4” |
 | **D** | Results Paper | charts, bars, trace, metrics on `/experiments/[id]` | Click round 4, see buyer_3 vs competitor reasons |
@@ -890,10 +893,10 @@ Acceptance criteria are testable. A story is not done if any box is unchecked.
 
 Acceptance:
 
-- [ ] `DecisionPort.decide` is async; accepts `AgentDecisionRequest` and returns `{ decision, reason, confidence }`
-- [ ] Invalid JSON raises; it is not coerced into `"stay"`
-- [ ] `reason` length ≥ 40 and not on the generic denylist
-- [ ] Unit test with FixtureAdapter covers stay/churn/switch
+- [x] `DecisionPort.decide` is async; accepts `AgentDecisionRequest` and returns `{ decision, reason, confidence }`
+- [x] Invalid JSON raises; it is not coerced into `"stay"`
+- [x] `reason` length ≥ 40 and not on the generic denylist
+- [x] Unit test with FixtureAdapter covers stay/churn/switch
 
 #### US-A2 · P0 · 1.5h — Acme fixed roster with a live WTP band
 
@@ -903,10 +906,10 @@ Acceptance:
 
 Acceptance:
 
-- [ ] `fixed_acme.py` emits `roster.json` with buyers, 1 competitor, 1 analyst
-- [ ] At least 3 buyers have WTP in 50–58 inclusive
-- [ ] Each buyer has `weight` summing to `market_size` (30)
-- [ ] Roster is identical when generated twice with seed 42
+- [x] `fixed_acme.py` emits `roster.json` with buyers, 1 competitor, 1 analyst
+- [x] At least 3 buyers have WTP in 50–58 inclusive
+- [x] Each buyer has `weight` summing to `market_size` (30)
+- [x] Roster is identical when generated twice with seed 42
 
 #### US-A3 · P0 · 2h — CursorSdkAdapter via AsyncAgent.prompt
 
@@ -916,16 +919,16 @@ Acceptance:
 
 Acceptance:
 
-- [ ] `pip install cursor-sdk`; Python 3.10+
-- [ ] Process lifespan opens `AsyncClient.launch_bridge` and closes it
-- [ ] Each decision is `await AsyncAgent.prompt(...)` with `client=`, `api_key=` explicit, `model` set, `local=LocalAgentOptions(cwd=scratch)`, `tools=[]`
-- [ ] `setting_sources` is not set
-- [ ] `CursorAgentError` (never started) vs `result.status == "error"` (ran and failed) are handled separately
-- [ ] `agent_id` / `run.id` logged before parse
-- [ ] `result.result` parsed as JSON `{ decision, reason, confidence }`
-- [ ] Prompt hash written for the template
-- [ ] One live prompt for `buyer_3` at price 59 returns a specific WTP-gap reason
-- [ ] Key never committed
+- [x] `pip install cursor-sdk`; Python 3.10+
+- [x] Process lifespan opens `AsyncClient.launch_bridge` and closes it
+- [x] Each decision is `await AsyncAgent.prompt(...)` with `client=`, `api_key=` explicit, `model` set, `local=LocalAgentOptions(cwd=scratch)`, `tools=[]`
+- [x] `setting_sources` is not set
+- [x] `CursorAgentError` (never started) vs `result.status == "error"` (ran and failed) are handled separately
+- [x] `agent_id` / `run.id` logged before parse
+- [x] `result.result` parsed as JSON `{ decision, reason, confidence }`
+- [x] Prompt hash written for the template
+- [x] One live prompt for `buyer_3` at price 59 returns a specific WTP-gap reason
+- [x] Key never committed
 
 #### US-A4 · P0 · 1h — FixtureAdapter with pitch-quality reasons
 
@@ -935,9 +938,9 @@ Acceptance:
 
 Acceptance:
 
-- [ ] Fixture covers 8 rounds × 2 runs × all agent ids
-- [ ] Reasons mention dollar figures (WTP, prices)
-- [ ] Shape qualitatively matches spec §10 (divergence opens ~R4)
+- [x] Fixture covers 8 rounds × 2 runs × all agent ids
+- [x] Reasons mention dollar figures (WTP, prices)
+- [x] Shape qualitatively matches spec §10 (divergence opens ~R4)
 
 #### US-A5 · P1 · 1.5h — Generated roster from product text
 
@@ -947,10 +950,10 @@ Acceptance:
 
 Acceptance:
 
-- [ ] One `AsyncAgent.prompt` → `roster.json` (also one-shot, `tools=[]`)
-- [ ] Same product + same prompt template → compared for stability; if they differ, skip claiming identity and show both live
-- [ ] Two product descriptions → visibly different roles
-- [ ] **Skip if US-A1–A4 or twin pipeline is not green by mid-afternoon**
+- [x] **Skipped (cutoff):** generated roster. Fixed Acme + working pipeline shipped instead.
+- [x] **Skipped**
+- [x] **Skipped**
+- [x] **Skip if US-A1–A4 or twin pipeline is not green by mid-afternoon** — applied; A5 not built.
 
 #### US-A6 · P1 · 1h — History summary is deterministic
 
@@ -960,8 +963,8 @@ Acceptance:
 
 Acceptance:
 
-- [ ] Same decision log → identical summary string
-- [ ] No Cursor `Agent.prompt` inside summary builder
+- [x] Same decision log → identical summary string
+- [x] No Cursor `Agent.prompt` inside summary builder
 
 ---
 
@@ -975,9 +978,9 @@ Acceptance:
 
 Acceptance:
 
-- [ ] `data/experiments/{id}/` contains experiment, roster, run_a, run_b, attribution (attribution may appear last)
-- [ ] Writes are atomic (write temp + rename)
-- [ ] `GET .../artifacts/experiment` returns the file
+- [x] `data/experiments/{id}/` contains experiment, roster, run_a, run_b, attribution (attribution may appear last)
+- [x] Writes are atomic (write temp + rename)
+- [x] `GET .../artifacts/experiment` returns the file
 
 #### US-B2 · P0 · 2h — Twin runner, one variable
 
@@ -987,10 +990,10 @@ Acceptance:
 
 Acceptance:
 
-- [ ] Intervention applied only to B and only from `applies_from_round`
-- [ ] Agent observation order frozen (start-of-round snapshot; buyers then competitor)
-- [ ] 8 rounds both runs
-- [ ] Alignment check implemented; failure sets `status=failed`
+- [x] Intervention applied only to B and only from `applies_from_round`
+- [x] Agent observation order frozen (start-of-round snapshot; buyers then competitor)
+- [x] 8 rounds both runs
+- [x] Alignment check implemented; failure sets `status=failed`
 
 #### US-B3 · P0 · 1.5h — REST create + fetch paper
 
@@ -1000,10 +1003,10 @@ Acceptance:
 
 Acceptance:
 
-- [ ] 202 on create, 200 paper when complete, 202 while running
-- [ ] CORS for localhost:3000
-- [ ] `CreateExperimentRequest` validation (rounds=8, price_change only)
-- [ ] OpenAPI available at `/docs`
+- [x] 202 on create, 200 paper when complete, 202 while running
+- [x] CORS for localhost:3000
+- [x] `CreateExperimentRequest` validation (rounds=8, price_change only)
+- [x] OpenAPI available at `/docs`
 
 #### US-B4 · P0 · 1.5h — Decision-diff attribution
 
@@ -1013,11 +1016,11 @@ Acceptance:
 
 Acceptance:
 
-- [ ] Only agents with differing decisions get mass
-- [ ] Analyst weight 0
-- [ ] `method: "decision_diff_v1"` recorded
-- [ ] Unit tests with a tiny 2-round fixture (known percentages)
-- [ ] Unattributed flag if metrics moved with no decision diff
+- [x] Only agents with differing decisions get mass
+- [x] Analyst weight 0
+- [x] `method: "decision_diff_v1"` recorded
+- [x] Unit tests with a tiny 2-round fixture (known percentages)
+- [x] Unattributed flag if metrics moved with no decision diff
 
 #### US-B5 · P0 · 1h — SSE progress
 
@@ -1027,9 +1030,9 @@ Acceptance:
 
 Acceptance:
 
-- [ ] `round_complete` includes `run_id`, `round`, `share`, `mrr`
-- [ ] `complete` and `failed` terminal events
-- [ ] Client can reconnect without duplicating artifacts
+- [x] `round_complete` includes `run_id`, `round`, `share`, `mrr`
+- [x] `complete` and `failed` terminal events
+- [x] Client can reconnect without duplicating artifacts
 
 #### US-B6 · P0 · 1h — Grounded narrative + receipt hashes
 
@@ -1039,16 +1042,21 @@ Acceptance:
 
 Acceptance:
 
-- [ ] Citations array required
-- [ ] Template fallback if model-free
-- [ ] Receipt includes seed, prompt_hash, roster_hash, `other_variables_changed: 0`, adapter, runtime, model
-- [ ] Test: narrative mentioning an agent not in logs is rejected
+- [x] Citations array required
+- [x] Template fallback if model-free
+- [x] Receipt includes seed, prompt_hash, roster_hash, `other_variables_changed: 0`, adapter, runtime, model
+- [x] Test: narrative mentioning an agent not in logs is rejected
 
 #### US-B7 · P1 · 0.5h — Health + adapter disclosure
 
 **As** the demo operator  
 **I want** `/health` and adapter on the paper  
 **So that** we do not claim Cursor SDK on fixture data.
+
+Acceptance:
+
+- [x] `/health` reports adapter and cursor_configured
+- [x] Paper receipt includes adapter
 
 ---
 
@@ -1062,11 +1070,11 @@ Acceptance:
 
 Acceptance:
 
-- [ ] `tokens.css` encodes guide colors, radii, type steps
-- [ ] `AnnouncementBar`: “Controlled experiment — not a forecast”
-- [ ] Nav: logo left, title center, no fake account menu
-- [ ] Primary button is pill 32px / `#17171c`
-- [ ] No `box-shadow`, no blue-600 CTAs, no coral buttons
+- [x] `tokens.css` encodes guide colors, radii, type steps
+- [x] `AnnouncementBar`: “Controlled experiment — not a forecast”
+- [x] Nav: logo left, title center, no fake account menu
+- [x] Primary button is pill 32px / `#17171c`
+- [x] No `box-shadow`, no blue-600 CTAs, no coral buttons
 
 #### US-C2 · P0 · 2h — Setup paper (`/`)
 
@@ -1076,14 +1084,14 @@ Acceptance:
 
 Acceptance:
 
-- [ ] Left/top live sentence: “Raise {product} from ${price} to ${forked} starting round {n}.” Updates as fields change
-- [ ] Fields grouped: Product / The one change / Method — not a flat 11-row form
-- [ ] Prefill Acme Analytics / $49 / +20% / seed 42
-- [ ] Method (rounds, seed, 0 other variables) is the Receipt strip, not gray disabled inputs
-- [ ] Only `price_change` is offered
-- [ ] Primary pill: `Run this experiment` POSTs `CreateExperimentRequest`
-- [ ] Secondary underline: `Open the prepared Acme paper` → golden `/experiments/acme-seed-42`
-- [ ] If API is down on Run: inline error + fixture link; no fake round ticks
+- [x] Left/top live sentence: “Raise {product} from ${price} to ${forked} starting round {n}.” Updates as fields change
+- [x] Fields grouped: Product / The one change / Method — not a flat 11-row form
+- [x] Prefill Acme Analytics / $49 / +20% / seed 42
+- [x] Method (rounds, seed, 0 other variables) is the Receipt strip, not gray disabled inputs
+- [x] Only `price_change` is offered
+- [x] Primary pill: `Run this experiment` POSTs `CreateExperimentRequest`
+- [x] Secondary underline: `Open the prepared Acme paper` → golden `/experiments/acme-seed-42`
+- [x] If API is down on Run: inline error + fixture link; no fake round ticks
 
 #### US-C3 · P0 · 1.5h — Receipt component
 
@@ -1093,9 +1101,9 @@ Acceptance:
 
 Acceptance:
 
-- [ ] Shows seed, adapter, runtime, model, prompt_hash (short), roster_hash (short), `other_variables_changed: 0`
-- [ ] Used on setup (pending hashes as em-dash) and on results (filled)
-- [ ] Mono labels per design guide; not a rainbow of chips
+- [x] Shows seed, adapter, runtime, model, prompt_hash (short), roster_hash (short), `other_variables_changed: 0`
+- [x] Used on setup (pending hashes as em-dash) and on results (filled)
+- [x] Mono labels per design guide; not a rainbow of chips
 
 #### US-C4 · P0 · 1h — Run progress via SSE
 
@@ -1105,11 +1113,11 @@ Acceptance:
 
 Acceptance:
 
-- [ ] Subscribes to `/events` after 202
-- [ ] Displays `Run B · round 4 / 8` and two columns (A filling, then B)
-- [ ] On `complete`, navigates to `/experiments/{id}`
-- [ ] On `failed`, shows the error string; does not route to a fake paper
-- [ ] Ticks only from SSE — never `setInterval`
+- [x] Subscribes to `/events` after 202
+- [x] Displays `Run B · round 4 / 8` and two columns (A filling, then B)
+- [x] On `complete`, navigates to `/experiments/{id}`
+- [x] On `failed`, shows the error string; does not route to a fake paper
+- [x] Ticks only from SSE — never `setInterval`
 
 #### US-C5 · P1 · 1h — Roster preview
 
@@ -1119,14 +1127,18 @@ Acceptance:
 
 Acceptance:
 
-- [ ] Rule-separated rows: role, count/weight, WTP range
-- [ ] Works with fixed Acme roster from paper payload
+- [x] Rule-separated rows: role, count/weight, WTP range
+- [x] Works with fixed Acme roster from paper payload
 
 #### US-C6 · P1 · 0.5h — Honesty copy on setup
 
 **As** the product  
 **I want** explicit “inside this simulation” language  
 **So that** we do not pitch a forecast.
+
+Acceptance:
+
+- [x] Setup copy says divergence is causal inside this simulation, not a forecast
 
 ---
 
@@ -1140,11 +1152,11 @@ Acceptance:
 
 Acceptance:
 
-- [ ] Header uses experiment prices, not hardcoded copy only (hardcode OK until API binds)
-- [ ] Three numbers with verbs: share **fell** Xpp, MRR **rose** $Y, Z buyers **left**
-- [ ] For golden Acme, share is down and MRR is up — opposite tones (danger vs success)
-- [ ] Narrative sits above the numbers
-- [ ] Embeds C’s `Receipt` once it exists; stub props until then
+- [x] Header uses experiment prices, not hardcoded copy only (hardcode OK until API binds)
+- [x] Three numbers with verbs: share **fell** Xpp, MRR **rose** $Y, Z buyers **left**
+- [x] For golden Acme, share is down and MRR is up — opposite tones (danger vs success)
+- [x] Narrative sits above the numbers
+- [x] Embeds C’s `Receipt` once it exists; stub props until then
 
 #### US-D2 · P0 · 2h — Twin trajectory chart
 
@@ -1154,14 +1166,14 @@ Acceptance:
 
 Acceptance:
 
-- [ ] X = R1…R8, toggle Share (%) vs MRR ($)
-- [ ] Series names: `Run A · $49`, `Run B · $59` (from payload)
-- [ ] Marker at `applies_from_round`
-- [ ] **Round pills** R1–R8 are the primary selector (chart points also select)
-- [ ] On load, select the first major divergence round (golden Acme: **R4**)
-- [ ] Left/Right keys move the selected round
-- [ ] No drop shadows; hairline axes; legend present
-- [ ] Renders from golden JSON with no backend up
+- [x] X = R1…R8, toggle Share (%) vs MRR ($)
+- [x] Series names: `Run A · $49`, `Run B · $59` (from payload)
+- [x] Marker at `applies_from_round`
+- [x] **Round pills** R1–R8 are the primary selector (chart points also select)
+- [x] On load, select the first major divergence round (golden Acme: **R4**)
+- [x] Left/Right keys move the selected round
+- [x] No drop shadows; hairline axes; legend present
+- [x] Renders from golden JSON with no backend up
 
 #### US-D3 · P0 · 1.5h — Attribution bars
 
@@ -1171,11 +1183,11 @@ Acceptance:
 
 Acceptance:
 
-- [ ] Caption for the **selected** round: “62% of this round’s new gap is …”
-- [ ] One stacked bar for the selected round (required); optional quiet mini-bars for others
-- [ ] Legend uses agent bands (price-sensitive, competitor, loyal)
-- [ ] Values from `divergence_by_round`, not invented
-- [ ] Empty contributor rounds render as empty / skipped, not fake 33/33/33
+- [x] Caption for the **selected** round: “62% of this round’s new gap is …”
+- [x] One stacked bar for the selected round (required); optional quiet mini-bars for others
+- [x] Legend uses agent bands (price-sensitive, competitor, loyal)
+- [x] Values from `divergence_by_round`, not invented
+- [x] Empty contributor rounds render as empty / skipped, not fake 33/33/33
 
 #### US-D4 · P0 · 2h — Click-through reason trace
 
@@ -1185,12 +1197,12 @@ Acceptance:
 
 Acceptance:
 
-- [ ] Default filter: agents whose `decision` differs; A stacked over B per agent
-- [ ] Full `reason` strings, no truncation mid-sentence (scroll OK)
-- [ ] Styled as `agent-console-card` (dark, product mockup cadence)
-- [ ] Golden load opens R4 with buyer_3 vs competitor already visible
-- [ ] Secondary underline: `Show everyone`
-- [ ] Citation clicks (`buyer_3 · R4 · B`) select that round and scroll the row
+- [x] Default filter: agents whose `decision` differs; A stacked over B per agent
+- [x] Full `reason` strings, no truncation mid-sentence (scroll OK)
+- [x] Styled as `agent-console-card` (dark, product mockup cadence)
+- [x] Golden load opens R4 with buyer_3 vs competitor already visible
+- [x] Secondary underline: `Show everyone`
+- [x] Citation clicks (`buyer_3 · R4 · B`) select that round and scroll the row
 
 #### US-D5 · P0 · 0.5h — Grounded summary block
 
@@ -1200,8 +1212,8 @@ Acceptance:
 
 Acceptance:
 
-- [ ] Renders `summary_narrative.text`
-- [ ] Citations visible as “buyer_3 · R4 · B”
+- [x] Renders `summary_narrative.text`
+- [x] Citations visible as “buyer_3 · R4 · B”
 
 #### US-D6 · P1 · 1h — Bind live GET + empty/error states
 
@@ -1211,9 +1223,9 @@ Acceptance:
 
 Acceptance:
 
-- [ ] Loading state (not a spinner-only page — skeleton rules OK)
-- [ ] Failed status shows engine error
-- [ ] Unknown id: honest empty, no fake Acme numbers
+- [x] Loading state (not a spinner-only page — skeleton rules OK)
+- [x] Failed status shows engine error
+- [x] Unknown id: honest empty, no fake Acme numbers
 
 #### US-D7 · P2 · skip — Export / print
 
@@ -1231,9 +1243,9 @@ Skip. Screenshot the paper.
 
 Acceptance:
 
-- [ ] File exists in `web/src/types/contracts.ts` and `api/app/contracts.py`
-- [ ] Field names match §9 and §11
-- [ ] Team agrees adapter, status, and decision enums
+- [x] File exists in `frontend/src/types/contracts.ts` and `backend/app/contracts.py`
+- [x] Field names match §9 and §11
+- [x] Team agrees adapter, status, and decision enums
 
 #### US-X2 · P0 · 1h · Owner: B (A supplies reasons) — Golden Acme paper on disk
 
@@ -1243,9 +1255,9 @@ Acceptance:
 
 Acceptance:
 
-- [ ] All five artifacts present (attribution may be computed by B from fixture logs)
-- [ ] Qualitatively matches spec §10
-- [ ] `GET` of that id returns the same payload (or web can import JSON in dev)
+- [x] All five artifacts present (attribution may be computed by B from fixture logs)
+- [x] Qualitatively matches spec §10
+- [x] `GET` of that id returns the same payload (or web can import JSON in dev)
 
 #### US-X3 · P0 · 1h · Owner: rotating — Vertical slice
 
@@ -1255,9 +1267,9 @@ Acceptance:
 
 Acceptance:
 
-- [ ] `adapter=fixture` end-to-end
-- [ ] Receipt shows `adapter: fixture`
-- [ ] Trace click works
+- [x] `adapter=fixture` end-to-end
+- [x] Receipt shows `adapter: fixture`
+- [x] Trace click works
 
 #### US-X4 · P1 · 1h · Owner: A+B — Live Cursor swap
 
@@ -1267,10 +1279,10 @@ Acceptance:
 
 Acceptance:
 
-- [ ] Same routes, different adapter
-- [ ] Two Run A with the same prompt template are compared; if they diverge, receipt discloses variance and copy is weakened
-- [ ] Reasons still specific
-- [ ] `/health` reports `cursor_configured: true` and the model id
+- [x] Same routes, different adapter
+- [x] Two Run A with the same prompt template are compared; if they diverge, receipt discloses variance and copy is weakened
+- [x] Reasons still specific
+- [x] `/health` reports `cursor_configured: true` and the model id
 
 #### US-X5 · P0 · 0.5h · Owner: C — README runbook
 
@@ -1280,9 +1292,9 @@ Acceptance:
 
 Acceptance:
 
-- [ ] `CURSOR_API_KEY`, `CURSOR_MODEL`, ports 8000/3000, `npm run dev` / `uvicorn` documented
-- [ ] How to run fixture-only (`DEFAULT_ADAPTER=fixture`)
-- [ ] `pip install cursor-sdk` (Python 3.10+)
+- [x] `CURSOR_API_KEY`, `CURSOR_MODEL`, ports 8000/3000, `npm run dev` / `uvicorn` documented
+- [x] How to run fixture-only (`DEFAULT_ADAPTER=fixture`)
+- [x] `pip install cursor-sdk` (Python 3.10+)
 
 ---
 
