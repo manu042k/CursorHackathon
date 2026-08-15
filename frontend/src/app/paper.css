@@ -178,6 +178,67 @@
   border-color: var(--color-primary);
 }
 
+.attribution {
+  margin: 0 0 var(--space-section);
+}
+
+.attribution__caption {
+  margin: 0 0 var(--space-md);
+  font-size: var(--text-body-lg);
+}
+
+.attribution__bar {
+  display: flex;
+  height: 16px;
+  width: 100%;
+  background: var(--color-soft-stone);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+}
+
+.attribution__empty {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  color: var(--color-muted);
+  padding: 0 var(--space-sm);
+  line-height: 16px;
+}
+
+.attribution__seg--price-sensitive {
+  background: var(--color-ink);
+}
+
+.attribution__seg--competitor {
+  background: var(--color-action-blue);
+}
+
+.attribution__seg--loyal {
+  background: var(--color-deep-green);
+}
+
+.attribution__legend {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-lg);
+  padding: 0;
+  margin: var(--space-md) 0 0;
+  font-size: var(--text-caption);
+  color: var(--color-slate);
+}
+
+.attribution__legend li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.attribution__swatch {
+  width: 10px;
+  height: 10px;
+  display: inline-block;
+}
+
 @media (max-width: 700px) {
   .metric-cards {
     grid-template-columns: 1fr;

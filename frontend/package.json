@@ -10,7 +10,8 @@
     "check:c2": "node scripts/check-c2.mjs",
     "check:c3": "node scripts/check-c3.mjs",
     "check:d1": "node scripts/check-d1.mjs",
-    "check:d2": "node scripts/check-d2.mjs"
+    "check:d2": "node scripts/check-d2.mjs",
+    "check:d3": "node scripts/check-d3.mjs"
   },
   "dependencies": {
     "next": "^15.1.0",
