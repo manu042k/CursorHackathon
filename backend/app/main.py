@@ -67,7 +67,7 @@ def _research(experiment_id: str, body: CreateExperimentRequest) -> None:
     registry.set_status(experiment_id, Status.researching)
     registry.append_event(experiment_id, "research_started", {"id": experiment_id})
     try:
-        roster = propose_roster(body)
+        roster = propose_roster(body, adapter=body.adapter, experiment_id=experiment_id)
         write_artifact(experiment_id, "roster", roster.model_dump(mode="json"))
         registry.set_status(experiment_id, Status.roster_ready)
         registry.append_event(experiment_id, "research_complete", {"id": experiment_id})
