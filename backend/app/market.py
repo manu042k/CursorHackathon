@@ -8,7 +8,7 @@ from app.contracts import Roster
 
 
 def parse_price_delta(base: float, delta: str) -> float:
-    """Apply a single price intervention. Percent deltas round to nearest dollar (49 +20% → 59)."""
+    """Apply a single price intervention. Percent deltas round to nearest dollar (120 +20% → 144)."""
     text = delta.strip()
     if text.endswith("%"):
         pct = float(text[:-1])

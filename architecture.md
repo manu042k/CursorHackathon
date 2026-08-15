@@ -42,7 +42,7 @@ A user defines a product and **one** intervention. The system freezes a market o
 - 3 roles in the default roster (buyers, competitor, analyst)
 - 8 rounds
 - 1 variable changed
-- Acme Analytics fixture, seed `42`, prepared in advance
+- Grok Bot fixture, seed `42`, prepared in advance
 - Generate-once / freeze / reuse for roster and prompts
 - Live decisions via Cursor SDK (`cursor-sdk`), not a raw model HTTP client
 - UI follows `DESIGN-Guide.md` — no parallel palette
@@ -189,7 +189,7 @@ Frontend modules (Next.js) are pages + design-system components, not a second do
 │   │   │   └── experiments.py       # routes + SSE
 │   │   ├── setup.py
 │   │   ├── roster/
-│   │   │   ├── fixed_acme.py        # P0 fixture
+│   │   │   ├── fixed_grok_bot.py    # P0 fixture
 │   │   │   └── generate.py          # P1, skip if late
 │   │   ├── agents/
 │   │   │   ├── port.py              # DecisionPort
@@ -221,7 +221,7 @@ Frontend modules (Next.js) are pages + design-system components, not a second do
 │   └── public/
 └── data/
     └── experiments/
-        └── acme-seed-42/            # checked-in golden paper for UI
+        └── grok-bot-seed-42/        # checked-in golden paper for UI
             ├── experiment.json
             ├── roster.json
             ├── run_a.json
@@ -231,7 +231,7 @@ Frontend modules (Next.js) are pages + design-system components, not a second do
 
 **Local run:** `cd backend && DEFAULT_ADAPTER=fixture uvicorn app.main:app --port 8000` and `cd frontend && npm run dev` (port 3000). See `README.md`.
 
-**Golden paper:** Person B (or A+B) checks in `data/experiments/acme-seed-42/` as soon as a plausible twin-run exists — even from `FixtureAdapter`. Person D builds the entire dashboard against this folder and never waits on live Cursor.
+**Golden paper:** Person B (or A+B) checks in `data/experiments/grok-bot-seed-42/` as soon as a plausible twin-run exists — even from `FixtureAdapter`. Person D builds the entire dashboard against this folder and never waits on live Cursor.
 
 ---
 
@@ -247,7 +247,7 @@ Frontend modules (Next.js) are pages + design-system components, not a second do
 
 **Market size vs instantiated callers:** spec says 30 addressable buyers. For latency, instantiate **5 Cursor buyer agents** whose decisions are weighted to represent bands of the 30 (e.g. buyer_1 weight 8, …). Document weights in `roster.json`. Do not silently spawn 30 live `Agent.prompt` runs on demo day.
 
-WTP must straddle $59. At least three buyers sit in `$50–$58`. That band *is* the plot.
+WTP must straddle $144. At least two buyers sit in `$120–$144`. That band *is* the plot.
 
 ### 6.2 DecisionPort
 
@@ -472,12 +472,12 @@ Base: `http://localhost:8000`
 
 ```json
 {
-  "product_name": "Acme Analytics",
-  "product_description": "B2B analytics dashboard for e-commerce teams",
-  "current_price": 49,
+  "product_name": "Grok Bot",
+  "product_description": "Always-on AI teammates with their own cloud computer. They sign into your tools, finish jobs end to end, and only come back for approval.",
+  "current_price": 120,
   "market_size": 30,
   "competitor_count": 1,
-  "competitor_price": 45,
+  "competitor_price": 100,
   "buyer_price_sensitivity": "medium",
   "rounds": 8,
   "random_seed": 42,
@@ -585,14 +585,14 @@ The page is not “configure simulation.” It is “write the fork.”
 
 ```
 [ black announcement: Controlled experiment — not a forecast ]
-[ Replay          Counterfactual          Open Acme paper ]
+[ Replay          Counterfactual          Open Grok Bot paper ]
 
 Change one thing.
 See who caused the rest.
 
   You are testing          │  Product
-  Raise Acme Analytics     │  name, one-line description
-  from $49 to $59          │  current price · competitor price
+  Raise Grok Bot           │  name, one-line description
+  from $120 to $144        │  current price · competitor price
   starting round 1.        │
                            │  The one change
   [ Run this experiment ]  │  type: price  delta: +20%  from round 1
@@ -604,10 +604,10 @@ See who caused the rest.
 **Intuition rules:**
 
 1. **Plain-English preview, live.** Left column restates the form as one sentence. If they change price or delta, the sentence updates. That sentence is the product, not the inputs.
-2. **Acme is already filled.** First-run cost is one click, not a form. Empty fields are a failure.
+2. **Grok Bot is already filled.** First-run cost is one click, not a form. Empty fields are a failure.
 3. **Two doors, labeled honestly.**
    - Primary pill: `Run this experiment` → `POST /experiments` (`adapter=cursor` when live, else explain the API is down).
-   - Secondary underline: `Open the prepared Acme paper` → `/experiments/acme-seed-42` from golden JSON. This is the demo path. Never dress fixture as live Cursor.
+   - Secondary underline: `Open the prepared Grok Bot paper` → `/experiments/grok-bot-seed-42` from golden JSON. This is the demo path. Never dress fixture as live Cursor.
 4. **Method is a receipt, not disabled gray inputs.** Rounds, seed, “0 other variables” sit in the `Receipt` strip. They look intentional and locked, not broken.
 5. **Fields grouped as Product / The one change / Method.** Do not present spec §4 as a flat 11-row spreadsheet.
 6. **Only `price_change` is choosable.** Other enum values stay out of the control. One beautiful fork beats a dropdown of unfinished interventions.
@@ -616,10 +616,10 @@ See who caused the rest.
 
 #### Screen 2 — The fork is running (same `/`, swapped body)
 
-No route change. The headline becomes the live method: `Running · $49 vs $59`.
+No route change. The headline becomes the live method: `Running · $120 vs $144`.
 
 ```
-Run A  baseline $49     Run B  +20% → $59
+Run A  baseline $120    Run B  +20% → $144
 R1 ···                  R1 ···
 R2 ···                  R2 ·
                         (fills only from SSE)
@@ -632,7 +632,7 @@ share 69%   MRR $1,221
 
 - Two columns, A then B. People should see “same world, then the fork.”
 - Round ticks come from SSE `round_complete`, never from `setInterval`.
-- If the API is missing, do **not** fake ticks. Show: `API is not running. Open the prepared Acme paper.` plus the secondary link.
+- If the API is missing, do **not** fake ticks. Show: `API is not running. Open the prepared Grok Bot paper.` plus the secondary link.
 - Failed runs stay here with the engine error. Never navigate to a paper of invented numbers.
 
 #### Screen 3 — Finding (`/experiments/[id]`)
@@ -642,10 +642,10 @@ Read top to bottom in **demo-script order**. Default state must already show the
 ```
 [ announcement ]
 
-Baseline $49 vs +20% → $59
+Baseline $120 vs +20% → $144
 
-Raising price 20% costs 10 points of share and still
-adds $51 MRR, because the buyers who left sat at WTP $52–$58.
+Raising Grok Bot 20% costs 10 points of share and still
+adds $115 MRR, because the buyers who left sat at WTP $128–$140.
 buyer_3 · R4 · B
 
 Share  −10pp     MRR  +$51     Left  4
@@ -710,7 +710,7 @@ Tokens: `frontend/src/styles/tokens.css` from the guide. Fonts: Space Grotesk (d
 | `Open the prepared Acme paper` | Client-side golden paper; receipt `adapter: fixture` |
 | `Run this experiment` with API up | Body swaps to Screen 2; SSE ticks; on `complete` go to `/experiments/{id}` |
 | `Run this experiment` with API down | Inline error + the fixture link. No fake rounds. |
-| Load `/experiments/acme-seed-42` | Paper with R4 selected, trace open on differed agents |
+| Load `/experiments/grok-bot-seed-42` | Paper with R4 selected, trace open on differed agents |
 | Click `R4` or a chart point | Chart marker, attribution sentence, and console all bind to that round |
 | Click a citation `buyer_3 · R4 · B` | Selects R4 and scrolls the console row into view |
 | `Show everyone` | Console lists stay/hold agents too; primary remains differed |
@@ -845,7 +845,7 @@ sequenceDiagram
 
 | Track | Role name | Owns on disk | Demo beat they must be able to show |
 |---|---|---|---|
-| **A** | Agent Runtime Engineer | `backend/app/agents/*`, `cursor_client.py`, `roster/fixed_acme.py`, prompts | One buyer JSON in / one JSON out via `AsyncAgent.prompt` |
+| **A** | Agent Runtime Engineer | `backend/app/agents/*`, `cursor_client.py`, `roster/fixed_grok_bot.py`, prompts | One buyer JSON in / one JSON out via `AsyncAgent.prompt` |
 | **B** | Twin Engine + API | `twin_runner`, `attribution`, `store`, `http`, `contracts.py` | `GET` paper JSON for Acme with hashes and 0 other vars |
 | **C** | Setup & Shell | `web` layout, tokens, `/`, receipt, SSE progress | Acme form + receipt + “running round 4” |
 | **D** | Results Paper | charts, bars, trace, metrics on `/experiments/[id]` | Click round 4, see buyer_3 vs competitor reasons |
@@ -906,8 +906,8 @@ Acceptance:
 
 Acceptance:
 
-- [x] `fixed_acme.py` emits `roster.json` with buyers, 1 competitor, 1 analyst
-- [x] At least 3 buyers have WTP in 50–58 inclusive
+- [x] `fixed_grok_bot.py` emits `roster.json` with buyers, 1 competitor, 1 analyst
+- [x] At least 2 buyers have WTP in 120–144 inclusive
 - [x] Each buyer has `weight` summing to `market_size` (30)
 - [x] Roster is identical when generated twice with seed 42
 
@@ -1086,11 +1086,11 @@ Acceptance:
 
 - [x] Left/top live sentence: “Raise {product} from ${price} to ${forked} starting round {n}.” Updates as fields change
 - [x] Fields grouped: Product / The one change / Method — not a flat 11-row form
-- [x] Prefill Acme Analytics / $49 / +20% / seed 42
+- [x] Prefill Grok Bot / $120 / +20% / seed 42
 - [x] Method (rounds, seed, 0 other variables) is the Receipt strip, not gray disabled inputs
 - [x] Only `price_change` is offered
 - [x] Primary pill: `Run this experiment` POSTs `CreateExperimentRequest`
-- [x] Secondary underline: `Open the prepared Acme paper` → golden `/experiments/acme-seed-42`
+- [x] Secondary underline: `Open the prepared Grok Bot paper` → golden `/experiments/grok-bot-seed-42`
 - [x] If API is down on Run: inline error + fixture link; no fake round ticks
 
 #### US-C3 · P0 · 1.5h — Receipt component
@@ -1147,7 +1147,7 @@ Acceptance:
 #### US-D1 · P0 · 1.5h — Paper header + metric cards
 
 **As** a business viewer  
-**I want** “Baseline $49 vs +20% → $59” and three numbers  
+**I want** “Baseline $120 vs +20% → $144” and three numbers  
 **So that** the finding is legible in five seconds.
 
 Acceptance:
@@ -1250,7 +1250,7 @@ Acceptance:
 #### US-X2 · P0 · 1h · Owner: B (A supplies reasons) — Golden Acme paper on disk
 
 **As** Person D  
-**I want** `data/experiments/acme-seed-42/` committed  
+**I want** `data/experiments/grok-bot-seed-42/` committed  
 **So that** the results UI is unblocked.
 
 Acceptance:

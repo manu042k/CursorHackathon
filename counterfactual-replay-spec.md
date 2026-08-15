@@ -92,7 +92,7 @@ A single web app (Next.js or plain React + FastAPI backend) with:
 | Divergence chart + attribution bars | **Must** | This is the figure in the paper. No figure, no pitch. |
 | Click-through reason trace | **Must** | This is how you answer “is the model actually deciding.” |
 | Intervention receipt panel | **Must** | Cheap to build, does the rhetorical work of the whole method. |
-| Worked Acme fixture, seed 42 | **Must** | Do not improvise live. Sanity-check the “share down, MRR up” shape before demo. |
+| Worked Grok Bot fixture, seed 42 | **Must** | Do not improvise live. Sanity-check the “share down, MRR up” shape before demo. |
 | Generated roster from product text | **Only if pipeline is solid** | Best differentiator after the engine works. Two products, two rosters. |
 | Leave-one-out / Shapley attribution | **Skip** | Say it as the “if we had more time” answer. Decision-diff is enough today. |
 | Historical calibration | **Skip** | This is the real company. Do not pretend a CSV upload on hackathon day. |
@@ -106,12 +106,12 @@ A single web app (Next.js or plain React + FastAPI backend) with:
 
 | Field | Type | Example |
 |---|---|---|
-| `product_name` | string | "Acme Analytics" |
-| `product_description` | string, 1–2 sentences | "B2B analytics dashboard for e-commerce teams" |
-| `current_price` | number (USD/month) | 49 |
+| `product_name` | string | "Grok Bot" |
+| `product_description` | string, 1–2 sentences | "Always-on AI teammates with their own cloud computer" |
+| `current_price` | number (USD/month) | 120 |
 | `market_size` | integer, total addressable buyer agents | 30 |
 | `competitor_count` | integer | 1–2 |
-| `competitor_price` | number | 45 |
+| `competitor_price` | number | 100 |
 | `buyer_price_sensitivity` | enum: low / medium / high | medium |
 | `rounds` | integer, fixed at 8 for the demo | 8 |
 | `random_seed` | integer, locked and reused across both runs | 42 |
@@ -165,7 +165,7 @@ Once §5.0 is wired in, these three roles become the *default* roster returned f
 
 Each buyer agent is a separate Grok 4.6 call (or a batched call returning an array) with its own persona (e.g. "price-sensitive, willingness to pay $52" vs "loyal, willingness to pay $70"). This is what makes the population feel real rather than monolithic.
 
-Spread willingness-to-pay so $59 sits **inside** the distribution, not above all of it. The plot of the demo is the 3–5 buyers who sit between $49 and $59. That band is what produces divergence instead of collapse or a flat line.
+Spread willingness-to-pay so $144 sits **inside** the distribution, not above all of it. The plot of the demo is the 3–5 buyers who sit between $120 and $144. That band is what produces divergence instead of collapse or a flat line.
 
 ### 5.2 Per-round agent I/O contract (this is what you code first)
 
@@ -270,7 +270,7 @@ Four frozen artifacts are the scientific record. If you cannot replay from them,
 
 The sentence the dashboard should write for the worked example:
 
-> Raising price 20% costs 10 points of share and still adds $51 MRR, because the buyers who left were already at or below willingness-to-pay of $52–$58. Remaining customers are the loyal segment. Click round 4.
+> Raising Grok Bot 20% costs 10 points of share and still adds $115 MRR, because the buyers who left were already at or below willingness-to-pay of $128–$140. Remaining customers are the loyal segment. Click round 4.
 
 ---
 
@@ -293,7 +293,7 @@ Read top to bottom like a paper. The chart is the figure. The trace is the appen
 
 **Hackathon build order (P0 + P1 only):**
 
-1. **Two-scenario header** — plain text, what changed, nothing else. ("Baseline $49 vs +20% → $59")
+1. **Two-scenario header** — plain text, what changed, nothing else. ("Baseline $120 vs +20% → $144")
 2. **Divergence line chart** — two lines (Chart.js), x = round, y = your chosen primary metric. This is the visual center of the demo.
 3. **Attribution bar under the chart** — a stacked/segmented bar per round showing causal contribution split (agent colors). This is the piece that makes it look like real causal analysis, not just "two lines diverged."
 4. **Click-through trace** — clicking any round on the chart opens a small panel showing each agent's actual logged `reason` string for that round, in both runs, side by side. This is your answer to "is the model actually deciding this."
@@ -325,32 +325,32 @@ Report MRR and market share as your two headline numbers — they're the two any
 Use this exact scenario as your dev/test fixture so you're not improvising data during build or demo.
 
 **Setup:**
-- Product: "Acme Analytics," B2B SaaS, $49/month
-- Market: 30 buyer agents, willingness-to-pay distributed $35–$75 (spread them so the churn threshold is interesting — a few just above/below $59)
-- 1 competitor agent, currently priced at $45
+- Product: "Grok Bot," always-on AI teammates, $120/seat/month (Cursor Premium Teams)
+- Market: 30 buyer agents, willingness-to-pay distributed $105–$180 (spread them so the churn threshold is interesting — a few just above/below $144)
+- 1 competitor agent, Claude Cowork, currently priced at $100
 - Seed: 42, locked across both runs
 
-**Intervention:** price +20% → $59, effective round 1
+**Intervention:** price +20% → $144, effective round 1
 
 **Expected qualitative outcome (sanity check your simulation against this before demo day):**
 - Round 1–3: minimal divergence (agents need a round or two to "notice" and act)
-- Round 4–5: divergence opens up as price-sensitive agents (willingness-to-pay $50–$58) start churning
+- Round 4–5: divergence opens up as price-sensitive agents (willingness-to-pay $128–$140) start churning
 - Round 6–8: divergence stabilizes as remaining buyers are the loyal/high-willingness-to-pay segment; MRR in run B likely still higher despite lower market share (this is your "revenue up, share down" story — a genuinely interesting finding, not just "more expensive = worse")
 
 **Illustrative trajectories to sanity-check shape** (not ground truth — your sim should rhyme with this, not match it pixel-for-pixel):
 
-| Round | Share A ($49) | Share B ($59) | MRR A | MRR B |
+| Round | Share A ($120) | Share B ($144) | MRR A | MRR B |
 |---|---|---|---|---|
-| 1 | 80% | 80% | $1,176 | $1,416 |
-| 2 | 80% | 78% | $1,176 | $1,381 |
-| 3 | 79% | 74% | $1,161 | $1,310 |
-| 4 | 78% | 69% | $1,147 | $1,221 |
-| 5 | 77% | 67% | $1,132 | $1,186 |
-| 6 | 76% | 66% | $1,117 | $1,168 |
-| 7 | 76% | 66% | $1,117 | $1,168 |
-| 8 | 76% | 66% | $1,117 | $1,168 |
+| 1 | 80% | 80% | $2,880 | $3,456 |
+| 2 | 80% | 78% | $2,880 | $3,370 |
+| 3 | 79% | 74% | $2,844 | $3,197 |
+| 4 | 78% | 69% | $2,808 | $2,981 |
+| 5 | 77% | 67% | $2,772 | $2,894 |
+| 6 | 76% | 66% | $2,736 | $2,851 |
+| 7 | 76% | 66% | $2,736 | $2,851 |
+| 8 | 76% | 66% | $2,736 | $2,851 |
 
-Final cards the demo should be able to show: **share −10pp**, **MRR +$51**. That tension is the whole pitch.
+Final cards the demo should be able to show: **share −10pp**, **MRR +$115**. That tension is the whole pitch.
 
 **Illustrative attribution at the rounds that move** (decision-diff, normalized to 100%):
 
@@ -401,7 +401,7 @@ If your simulation produces something wildly different from this shape (e.g. zer
 
 | Beat | What they see | What you say |
 |---|---|---|
-| 20s | Header: Baseline $49 vs +20% → $59. Receipt: 0 other variables changed. | Controlled experiment, not a prediction. |
+| 20s | Header: Baseline $120 vs +20% → $144. Receipt: 0 other variables changed. | Controlled experiment, not a prediction. |
 | 60s | Two lines diverge at R4. Share down, MRR up. | The interesting finding is the tension, not the direction. |
 | 90s | Attribution bars. Click R4. Buyer_3 reason vs competitor reason. | Every decision is logged. Here is who caused the gap. |
 | Optional 30s | Roster for Acme vs a consumer box, side by side. | We did not hardcode buyers. The model composed the market. |
@@ -413,7 +413,7 @@ If your simulation produces something wildly different from this shape (e.g. zer
 | Failure | How it shows up | Fix before demo |
 |---|---|---|
 | **Nondeterminism** | Re-run produces a different Run A. | Temp 0, seed lock, freeze roster. If still noisy, weaken the claim. |
-| **Premature collapse** | Everyone churns in round 1. | Spread WTP so $59 sits inside the distribution, not above all of it. |
-| **Zero divergence** | Two lines overlap. | Make 3–5 buyers sit between $49 and $59. That band is the plot. |
+| **Premature collapse** | Everyone churns in round 1. | Spread WTP so $144 sits inside the distribution, not above all of it. |
+| **Zero divergence** | Two lines overlap. | Make 3–5 buyers sit between $120 and $144. That band is the plot. |
 | **Generic reasons** | “I decided to churn.” | Force JSON schema. Reject empty or template reasons in the runner. |
 | **Ungrounded summary** | Narrative mentions a cause not in the logs. | Generate the summary only from stored reason strings. |

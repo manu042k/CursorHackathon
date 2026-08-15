@@ -9,8 +9,8 @@ const price = fs.readFileSync(path.join(root, "src/lib/price.ts"), "utf8");
 const api = fs.readFileSync(path.join(root, "src/lib/api.ts"), "utf8");
 
 const checks = [
-  [form.includes('product_name: "Acme Analytics"'), "Acme prefill"],
-  [form.includes("current_price: 49"), "$49 prefill"],
+  [form.includes('product_name: "Grok Bot"'), "Grok Bot prefill"],
+  [form.includes("current_price: 120"), "$120 prefill"],
   [form.includes('variable_delta: "+20%"'), "+20% prefill"],
   [form.includes("random_seed: 42"), "seed 42"],
   [form.includes("Product"), "Product group"],
@@ -19,8 +19,8 @@ const checks = [
   [form.includes("price_change"), "only price_change"],
   [!form.includes("marketing_spend"), "no unfinished interventions"],
   [form.includes("Run this experiment"), "primary CTA"],
-  [form.includes("Open the prepared Acme paper"), "fixture door"],
-  [form.includes("/experiments/acme-seed-42"), "golden paper href"],
+  [form.includes("Open the prepared Grok Bot paper"), "fixture door"],
+  [form.includes("/experiments/grok-bot-seed-42"), "golden paper href"],
   [form.includes("createExperiment"), "POST create"],
   [form.includes("ApiDownError"), "API-down path"],
   [!form.includes("setInterval"), "no fake round ticks"],

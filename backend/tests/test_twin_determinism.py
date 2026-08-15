@@ -7,18 +7,22 @@ import asyncio
 from app.agents.fixture import FixtureAdapter
 from app.contracts import AgentDecision, AgentDecisionRequest, CreateExperimentRequest, RunId, Status
 from app.market import parse_price_delta
+from app.roster.fixed_grok_bot import COMPETITOR_PRICE, FORK_PRICE, LIST_PRICE
 from app.store import read_artifact
 from app.twin_runner import observation_order, run_twin
 
 
-def _acme(**overrides) -> CreateExperimentRequest:
+def _grok(**overrides) -> CreateExperimentRequest:
     payload = {
-        "product_name": "Acme Analytics",
-        "product_description": "B2B analytics dashboard for e-commerce teams",
-        "current_price": 49,
+        "product_name": "Grok Bot",
+        "product_description": (
+            "Always-on AI teammates with their own cloud computer. They sign into "
+            "your tools, finish jobs end to end, and only come back for approval."
+        ),
+        "current_price": LIST_PRICE,
         "market_size": 30,
         "competitor_count": 1,
-        "competitor_price": 45,
+        "competitor_price": COMPETITOR_PRICE,
         "buyer_price_sensitivity": "medium",
         "rounds": 8,
         "random_seed": 42,
@@ -61,13 +65,14 @@ class MisalignedAdapter:
         return await self.inner.decide(request)
 
 
-def test_parse_plus_twenty_percent_is_fifty_nine():
+def test_parse_plus_twenty_percent_is_fork_price():
+    assert parse_price_delta(LIST_PRICE, "+20%") == FORK_PRICE
     assert parse_price_delta(49, "+20%") == 59
 
 
 def test_eight_rounds_both_runs(tmp_path):
     adapter = FixtureAdapter()
-    result = _run(run_twin(_acme(), "exp-eight", adapter, root=tmp_path))
+    result = _run(run_twin(_grok(), "exp-eight", adapter, root=tmp_path))
     assert result.status == Status.complete
     assert len(result.run_a["trajectory"]) == 8
     assert len(result.run_b["trajectory"]) == 8
@@ -82,26 +87,26 @@ def test_eight_rounds_both_runs(tmp_path):
 def test_intervention_only_on_b_from_applies_from_round(tmp_path):
     adapter = RecordingAdapter()
     result = _run(
-        run_twin(_acme(applies_from_round=3), "exp-from-3", adapter, root=tmp_path)
+        run_twin(_grok(applies_from_round=3), "exp-from-3", adapter, root=tmp_path)
     )
     assert result.status == Status.complete
     for req in adapter.requests:
         if req.round < 3:
-            assert req.current_price == 49
+            assert req.current_price == LIST_PRICE
         elif req.run_id == RunId.A:
-            assert req.current_price == 49
+            assert req.current_price == LIST_PRICE
         else:
-            assert req.current_price == 59
+            assert req.current_price == FORK_PRICE
     for row in result.run_a["trajectory"]:
-        assert row["current_price"] == 49
-    assert result.run_b["trajectory"][0]["current_price"] == 49
-    assert result.run_b["trajectory"][1]["current_price"] == 49
-    assert result.run_b["trajectory"][2]["current_price"] == 59
+        assert row["current_price"] == LIST_PRICE
+    assert result.run_b["trajectory"][0]["current_price"] == LIST_PRICE
+    assert result.run_b["trajectory"][1]["current_price"] == LIST_PRICE
+    assert result.run_b["trajectory"][2]["current_price"] == FORK_PRICE
 
 
 def test_observation_order_buyers_then_competitor(tmp_path):
     adapter = FixtureAdapter()
-    result = _run(run_twin(_acme(), "exp-order", adapter, root=tmp_path))
+    result = _run(run_twin(_grok(), "exp-order", adapter, root=tmp_path))
     expected = observation_order(result.roster)
     assert expected[:5] == ["buyer_1", "buyer_2", "buyer_3", "buyer_4", "buyer_5"]
     assert expected[5] == "competitor"
@@ -120,7 +125,7 @@ def test_observation_order_buyers_then_competitor(tmp_path):
 def test_alignment_broken_sets_failed(tmp_path):
     result = _run(
         run_twin(
-            _acme(applies_from_round=3),
+            _grok(applies_from_round=3),
             "exp-broken",
             MisalignedAdapter(),
             root=tmp_path,

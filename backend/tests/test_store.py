@@ -21,8 +21,8 @@ def test_atomic_write_five_files(tmp_path, monkeypatch):
 
 def test_get_artifact_experiment(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
-    write_artifact("exp_get", "experiment", {"product_name": "Acme Analytics"}, root=tmp_path)
+    write_artifact("exp_get", "experiment", {"product_name": "Grok Bot"}, root=tmp_path)
     client = TestClient(app)
     response = client.get("/experiments/exp_get/artifacts/experiment")
     assert response.status_code == 200
-    assert response.json()["product_name"] == "Acme Analytics"
+    assert response.json()["product_name"] == "Grok Bot"

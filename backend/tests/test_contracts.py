@@ -12,12 +12,15 @@ from app.contracts import (
 )
 
 SECTION_9_1 = {
-    "product_name": "Acme Analytics",
-    "product_description": "B2B analytics dashboard for e-commerce teams",
-    "current_price": 49,
+    "product_name": "Grok Bot",
+    "product_description": (
+        "Always-on AI teammates with their own cloud computer. They sign into "
+        "your tools, finish jobs end to end, and only come back for approval."
+    ),
+    "current_price": 120,
     "market_size": 30,
     "competitor_count": 1,
-    "competitor_price": 45,
+    "competitor_price": 100,
     "buyer_price_sensitivity": "medium",
     "rounds": 8,
     "random_seed": 42,
@@ -56,7 +59,7 @@ def test_adapter_status_and_decision_enums():
 def test_experiment_paper_round_trips_section_9_2_shape():
     paper = ExperimentPaper.model_validate(
         {
-            "id": "exp_acme",
+            "id": "exp_grok_bot",
             "status": "complete",
             "experiment": SECTION_9_1,
             "roster": {"agent_roles": [], "agents": []},
@@ -73,10 +76,10 @@ def test_experiment_paper_round_trips_section_9_2_shape():
             "metrics": {
                 "share_a": [80],
                 "share_b": [80],
-                "mrr_a": [1176],
-                "mrr_b": [1416],
+                "mrr_a": [2880],
+                "mrr_b": [3456],
                 "final_share_delta_pp": -10,
-                "final_mrr_delta": 51,
+                "final_mrr_delta": 115,
                 "final_churn_count_b": 4,
             },
             "divergence_by_round": [],

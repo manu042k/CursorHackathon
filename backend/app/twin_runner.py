@@ -20,7 +20,7 @@ from app.contracts import (
 )
 from app.history import history_summary
 from app.market import Market, market_from_roster, parse_price_delta
-from app.roster.fixed_acme import build_roster
+from app.roster.fixed_grok_bot import build_roster
 from app.store import write_artifact
 
 ALIGNMENT_ERROR = "alignment_broken"

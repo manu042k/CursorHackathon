@@ -41,7 +41,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000. Use **Run this experiment** (fixture) or **Open the prepared Acme paper**.
+Open http://localhost:3000. Use **Run this experiment** (fixture) or **Open the prepared Grok Bot paper**.
 
 ## Live Cursor SDK
 

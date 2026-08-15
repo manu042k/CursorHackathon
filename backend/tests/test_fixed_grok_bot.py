@@ -1,7 +1,7 @@
-"""US-A2: five buyers, WTP band around $59, weights sum to 30, seed-stable."""
+"""US-A2: five buyers, WTP band around $144, weights sum to 30, seed-stable."""
 
 from app.contracts import Roster
-from app.roster.fixed_acme import MARKET_SIZE, build_roster
+from app.roster.fixed_grok_bot import FORK_PRICE, LIST_PRICE, MARKET_SIZE, build_roster
 
 
 def test_roster_has_buyers_competitor_analyst():
@@ -21,9 +21,13 @@ def test_three_buyers_in_wtp_band():
     in_band = [
         a
         for a in buyers
-        if 50 <= float(a.traits["willingness_to_pay"]) <= 58
+        if LIST_PRICE <= float(a.traits["willingness_to_pay"]) <= FORK_PRICE
     ]
-    assert len(in_band) >= 3
+    assert len(in_band) >= 2
+    below_list = [
+        a for a in buyers if float(a.traits["willingness_to_pay"]) < LIST_PRICE
+    ]
+    assert len(below_list) >= 1
 
 
 def test_buyer_weights_sum_to_market_size():

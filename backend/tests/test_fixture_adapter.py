@@ -4,6 +4,7 @@ import asyncio
 
 from app.agents.fixture import FixtureAdapter
 from app.contracts import AgentDecisionRequest, RunId
+from app.roster.fixed_grok_bot import COMPETITOR_PRICE, FORK_PRICE, LIST_PRICE
 
 
 def _run(coro):
@@ -15,7 +16,7 @@ def test_covers_eight_rounds_two_runs_all_agents():
     ids = adapter.agent_ids()
     assert "buyer_3" in ids and "competitor" in ids and "analyst" in ids
     for run in (RunId.A, RunId.B):
-        price = 49 if run == RunId.A else 59
+        price = LIST_PRICE if run == RunId.A else FORK_PRICE
         for round_n in range(1, 9):
             for agent_id in ids:
                 persona = {}
@@ -29,6 +30,7 @@ def test_covers_eight_rounds_two_runs_all_agents():
                             agent_id=agent_id,
                             round=round_n,
                             current_price=price,
+                            competitor_price=COMPETITOR_PRICE,
                             persona=persona,
                         )
                     )
@@ -45,8 +47,9 @@ def test_round_4_b_opens_divergence():
                 run_id=RunId.B,
                 agent_id="buyer_3",
                 round=4,
-                current_price=59,
-                persona={"willingness_to_pay": 55},
+                current_price=FORK_PRICE,
+                competitor_price=COMPETITOR_PRICE,
+                persona={"willingness_to_pay": 140},
             )
         )
     )
@@ -56,8 +59,9 @@ def test_round_4_b_opens_divergence():
                 run_id=RunId.A,
                 agent_id="buyer_3",
                 round=4,
-                current_price=49,
-                persona={"willingness_to_pay": 55},
+                current_price=LIST_PRICE,
+                competitor_price=COMPETITOR_PRICE,
+                persona={"willingness_to_pay": 140},
             )
         )
     )
@@ -69,7 +73,8 @@ def test_round_4_b_opens_divergence():
                 run_id=RunId.B,
                 agent_id="competitor",
                 round=4,
-                current_price=59,
+                current_price=FORK_PRICE,
+                competitor_price=COMPETITOR_PRICE,
             )
         )
     )

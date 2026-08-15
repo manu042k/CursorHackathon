@@ -11,13 +11,14 @@ import type { Adapter, CreateExperimentRequest, RoundCompleteEvent } from "@/typ
 import { hypothesisSentence } from "@/lib/price";
 import { subscribeExperimentEvents } from "@/lib/sse";
 
-const ACME: CreateExperimentRequest = {
-  product_name: "Acme Analytics",
-  product_description: "B2B analytics dashboard for e-commerce teams",
-  current_price: 49,
+const GROK_BOT: CreateExperimentRequest = {
+  product_name: "Grok Bot",
+  product_description:
+    "Always-on AI teammates with their own cloud computer. They sign into your tools, finish jobs end to end, and only come back for approval.",
+  current_price: 120,
   market_size: 30,
   competitor_count: 1,
-  competitor_price: 45,
+  competitor_price: 100,
   buyer_price_sensitivity: "medium",
   rounds: 8,
   random_seed: 42,
@@ -28,13 +29,13 @@ const ACME: CreateExperimentRequest = {
 };
 
 export function HypothesisForm() {
-  const [productName, setProductName] = useState(ACME.product_name);
-  const [productDescription, setProductDescription] = useState(ACME.product_description);
-  const [currentPrice, setCurrentPrice] = useState(String(ACME.current_price));
-  const [competitorPrice, setCompetitorPrice] = useState(String(ACME.competitor_price));
-  const [delta, setDelta] = useState(ACME.variable_delta);
-  const [fromRound, setFromRound] = useState(String(ACME.applies_from_round));
-  const seed = ACME.random_seed;
+  const [productName, setProductName] = useState(GROK_BOT.product_name);
+  const [productDescription, setProductDescription] = useState(GROK_BOT.product_description);
+  const [currentPrice, setCurrentPrice] = useState(String(GROK_BOT.current_price));
+  const [competitorPrice, setCompetitorPrice] = useState(String(GROK_BOT.competitor_price));
+  const [delta, setDelta] = useState(GROK_BOT.variable_delta);
+  const [fromRound, setFromRound] = useState(String(GROK_BOT.applies_from_round));
+  const seed = GROK_BOT.random_seed;
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [startedId, setStartedId] = useState<string | null>(null);
@@ -75,7 +76,7 @@ export function HypothesisForm() {
     setFailed(null);
     setPending(true);
     const body: CreateExperimentRequest = {
-      ...ACME,
+      ...GROK_BOT,
       product_name: productName,
       product_description: productDescription,
       current_price: price,
@@ -94,7 +95,7 @@ export function HypothesisForm() {
         err instanceof ApiDownError
           ? err.message
           : "API is not running.";
-      setError(`${message} Open the prepared Acme paper.`);
+      setError(`${message} Open the prepared Grok Bot paper.`);
     } finally {
       setPending(false);
     }
@@ -116,15 +117,15 @@ export function HypothesisForm() {
           Run this experiment
         </ButtonPrimary>
         <p>
-          <Link href="/experiments/acme-seed-42" className="button-secondary">
-            Open the prepared Acme paper
+          <Link href="/experiments/grok-bot-seed-42" className="button-secondary">
+            Open the prepared Grok Bot paper
           </Link>
         </p>
         {error ? (
           <p className="setup__error" role="alert">
             {error}{" "}
-            <Link href="/experiments/acme-seed-42" className="button-secondary">
-              Open the prepared Acme paper
+            <Link href="/experiments/grok-bot-seed-42" className="button-secondary">
+              Open the prepared Grok Bot paper
             </Link>
           </p>
         ) : null}

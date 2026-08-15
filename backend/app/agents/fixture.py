@@ -1,9 +1,15 @@
-"""US-A4: canned Acme decisions. Pitch-quality reasons, 8×2×agents."""
+"""US-A4: canned Grok Bot decisions. Pitch-quality reasons, 8×2×agents."""
 
 from __future__ import annotations
 
-from app.contracts import AgentDecision, AgentDecisionRequest, RunId
-from app.roster.fixed_acme import BUYER_SPECS, build_roster
+from app.contracts import AgentDecision, AgentDecisionRequest
+from app.roster.fixed_grok_bot import (
+    BUYER_SPECS,
+    COMPETITOR_NAME,
+    COMPETITOR_PRICE,
+    FORK_PRICE,
+    build_roster,
+)
 
 CHURN_A = {"buyer_1": 3, "buyer_2": None, "buyer_3": None, "buyer_4": None, "buyer_5": None}
 CHURN_B = {"buyer_1": 2, "buyer_2": 4, "buyer_3": 4, "buyer_4": None, "buyer_5": None}
@@ -29,8 +35,10 @@ class FixtureAdapter:
 
     def _buyer(self, request: AgentDecisionRequest) -> AgentDecision:
         wtp = float(request.persona.get("willingness_to_pay", WTP[request.agent_id]))
+        loyalty = float(request.persona.get("loyalty_score", 0.3))
         price = request.current_price
-        churn_map = CHURN_B if price >= 59 else CHURN_A
+        rival = request.competitor_price
+        churn_map = CHURN_B if price >= FORK_PRICE else CHURN_A
         churn_round = churn_map[request.agent_id]
         if churn_round and request.round >= churn_round:
             if price > wtp + 5:
@@ -38,7 +46,7 @@ class FixtureAdapter:
                     decision="churn",
                     reason=(
                         f"Price now ${price:.0f} is ${price - wtp:.0f} above my willingness "
-                        f"to pay of ${wtp:.0f}; competitor is ${request.competitor_price:.0f}. I leave."
+                        f"to pay of ${wtp:.0f}; {COMPETITOR_NAME} is ${rival:.0f}. I leave."
                     ),
                     confidence=0.84,
                 )
@@ -46,7 +54,7 @@ class FixtureAdapter:
                 decision="switch",
                 reason=(
                     f"Price ${price:.0f} sits on my willingness to pay of ${wtp:.0f}; "
-                    f"I switch to the competitor at ${request.competitor_price:.0f}."
+                    f"I switch to {COMPETITOR_NAME} at ${rival:.0f}."
                 ),
                 confidence=0.8,
             )
@@ -54,17 +62,17 @@ class FixtureAdapter:
         if gap <= 0:
             reason = (
                 f"Price ${price:.0f} is ${abs(gap):.0f} under my willingness to pay of "
-                f"${wtp:.0f}; I stay subscribed."
+                f"${wtp:.0f}; loyalty {loyalty}. I stay subscribed."
             )
         else:
             reason = (
-                f"Price ${price:.0f} is ${gap:.0f} over my willingness to pay of ${wtp:.0f}, "
-                f"but I stay subscribed this round."
+                f"Price ${price:.0f} is ${gap:.0f} over my willingness to pay of "
+                f"${wtp:.0f}, but loyalty {loyalty} keeps me subscribed this round."
             )
         return AgentDecision(decision="stay", reason=reason, confidence=0.7)
 
     def _competitor(self, request: AgentDecisionRequest) -> AgentDecision:
-        if request.current_price >= 59 and request.round >= 4:
+        if request.current_price >= FORK_PRICE and request.round >= 4:
             return AgentDecision(
                 decision="match",
                 reason=(
@@ -76,27 +84,28 @@ class FixtureAdapter:
         return AgentDecision(
             decision="hold",
             reason=(
-                f"I hold competitor price at ${request.competitor_price:.0f} while "
+                f"I hold {COMPETITOR_NAME} at ${request.competitor_price:.0f} while "
                 f"your list price is ${request.current_price:.0f} this round."
             ),
             confidence=0.72,
         )
 
     def _analyst(self, request: AgentDecisionRequest) -> AgentDecision:
-        if request.current_price >= 59 and request.round == 4:
+        if request.current_price >= FORK_PRICE and request.round == 4:
             return AgentDecision(
                 decision="note",
                 reason=(
-                    "Divergence opens at round 4: price-sensitive buyers near WTP $52–$55 "
-                    "churn; the competitor matches price."
+                    "Divergence opens at round 4: price-sensitive buyers near WTP $128–$140 "
+                    f"leave Grok Bot; {COMPETITOR_NAME} matches price."
                 ),
                 confidence=0.9,
             )
         return AgentDecision(
             decision="note",
             reason=(
-                f"Run {request.run_id.value} round {request.round}: price "
-                f"${request.current_price:.0f}, watching share."
+                f"Run {request.run_id.value} round {request.round}: Grok Bot "
+                f"${request.current_price:.0f} vs {COMPETITOR_NAME} "
+                f"${request.competitor_price:.0f}, watching share."
             ),
             confidence=0.85,
         )

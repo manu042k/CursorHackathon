@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { FindingPaper } from "@/components/FindingPaper";
-import golden from "@/data/acme-seed-42.json";
+import golden from "@/data/grok-bot-seed-42.json";
 import { ApiDownError, getExperiment } from "@/lib/api";
 import { subscribeExperimentEvents } from "@/lib/sse";
 import type { ExperimentPaper } from "@/types/contracts";
@@ -36,7 +36,7 @@ export function PaperLoader({ id }: { id: string }) {
           return;
         }
         if (status === 404) {
-          if (id === "acme-seed-42") {
+          if (id === "grok-bot-seed-42") {
             setView({ kind: "paper", paper: golden as unknown as ExperimentPaper });
             return;
           }
@@ -55,7 +55,7 @@ export function PaperLoader({ id }: { id: string }) {
         setView({ kind: "empty" });
       } catch (err) {
         if (cancelled) return;
-        if (id === "acme-seed-42") {
+        if (id === "grok-bot-seed-42") {
           setView({ kind: "paper", paper: golden as unknown as ExperimentPaper });
           return;
         }
@@ -102,7 +102,7 @@ export function PaperLoader({ id }: { id: string }) {
       <main className="finding">
         <p className="shell-kicker">Finding</p>
         <h1 className="paper-header__title">No paper for {id}</h1>
-        <p>This id is not in the record. Numbers from Acme are not shown.</p>
+        <p>This id is not in the record. Numbers from Grok Bot are not shown.</p>
       </main>
     );
   }

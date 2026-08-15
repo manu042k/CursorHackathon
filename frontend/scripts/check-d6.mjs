@@ -13,7 +13,7 @@ const checks = [
   [loader.includes("skeleton"), "loading skeleton"],
   [loader.includes("failed"), "failed engine error"],
   [loader.includes("No paper for"), "unknown id empty"],
-  [loader.includes("Acme are not shown") || loader.includes("not shown"), "no fake Acme numbers"],
+  [loader.includes("Grok Bot are not shown") || loader.includes("not shown"), "no fake Grok Bot numbers"],
   [css.includes("skeleton__rule"), "skeleton rules"],
 ];
 
