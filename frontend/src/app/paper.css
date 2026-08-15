@@ -155,19 +155,13 @@
   background: var(--color-action-blue);
 }
 
-.twin-chart__toggle button {
-  background: none;
-  border: 0;
-  border-bottom: 1px solid transparent;
-  padding: 6px 12px;
-  font-size: var(--text-button);
-  color: var(--color-slate);
-  cursor: pointer;
+.twin-chart__figures {
+  display: grid;
+  gap: var(--space-xl);
 }
 
-.twin-chart__toggle button.is-active {
-  color: var(--color-ink);
-  border-bottom-color: var(--color-ink);
+.paper-figure {
+  margin: 0 0 var(--space-section);
 }
 
 .twin-chart__svg {
