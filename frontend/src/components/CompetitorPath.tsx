@@ -1,3 +1,4 @@
+import { RUN_LABEL } from "@/lib/runs";
 import type { AgentLog, ExperimentPaper } from "@/types/contracts";
 import {
   Table,
@@ -22,8 +23,8 @@ export function CompetitorPath({ paper }: { paper: ExperimentPaper }) {
         <TableHeader>
           <TableRow>
             <TableHead>Round</TableHead>
-            <TableHead>Run A</TableHead>
-            <TableHead>Run B</TableHead>
+            <TableHead>{RUN_LABEL.A}</TableHead>
+            <TableHead>{RUN_LABEL.B}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

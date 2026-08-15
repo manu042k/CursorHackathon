@@ -9,6 +9,7 @@ import {
   agentLabel,
   shortDecision,
 } from "@/lib/orchestration";
+import { RUN_LABEL, runLabel } from "@/lib/runs";
 import type { AgentLog, DecisionEvent, RosterAgent, RoundCompleteEvent, RunId } from "@/types/contracts";
 
 type Pick = { decision: string; reason: string; run_id: RunId };
@@ -115,7 +116,7 @@ export function OrchestrationGraph({
     <div className="orch">
       <p className="orch__caption">
         Orchestration · round {round}
-        {live && latest ? ` · Run ${latest.run_id} · ${latest.agent_id}` : null}
+        {live && latest ? ` · ${runLabel(latest.run_id)} · ${latest.agent_id}` : null}
       </p>
       <div className="orch__stage" aria-label="Agent orchestration graph">
         <svg viewBox={`0 0 ${VIEW.w} ${VIEW.h}`} className="orch__svg" aria-hidden="true">
@@ -149,7 +150,7 @@ export function OrchestrationGraph({
         >
           <span>price</span>
           <em>
-            A ${Math.round(basePrice)} · B ${Math.round(forkedPrice)}
+            {RUN_LABEL.A} ${Math.round(basePrice)} · {RUN_LABEL.B} ${Math.round(forkedPrice)}
           </em>
         </div>
         {agents.map((agentId, index) => {
@@ -184,10 +185,10 @@ export function OrchestrationGraph({
               </span>
               <em>
                 <b className={`decision-chip decision-chip--${a?.decision ?? "none"}`}>
-                  A {shortDecision(a?.decision)}
+                  {runLabel("A")} {shortDecision(a?.decision)}
                 </b>
                 <b className={`decision-chip decision-chip--${b?.decision ?? "none"}`}>
-                  B {shortDecision(b?.decision)}
+                  {runLabel("B")} {shortDecision(b?.decision)}
                 </b>
               </em>
             </button>
@@ -199,7 +200,7 @@ export function OrchestrationGraph({
         >
           <span>share</span>
           <em>
-            A {shareA == null ? "—" : `${Math.round(shareA)}%`} · B{" "}
+            {RUN_LABEL.A} {shareA == null ? "—" : `${Math.round(shareA)}%`} · {RUN_LABEL.B}{" "}
             {shareB == null ? "—" : `${Math.round(shareB)}%`}
           </em>
         </div>
@@ -212,15 +213,15 @@ export function OrchestrationGraph({
           </p>
           <p>
             <span className={`decision-chip decision-chip--${selectedA?.decision ?? "none"}`}>
-              A {shortDecision(selectedA?.decision)}
+              {runLabel("A")} {shortDecision(selectedA?.decision)}
             </span>
-            {selectedA?.reason ?? (live ? "Waiting for Run A." : "No decision this round.")}
+            {selectedA?.reason ?? (live ? `Waiting for ${RUN_LABEL.A}.` : "No decision this round.")}
           </p>
           <p>
             <span className={`decision-chip decision-chip--${selectedB?.decision ?? "none"}`}>
-              B {shortDecision(selectedB?.decision)}
+              {runLabel("B")} {shortDecision(selectedB?.decision)}
             </span>
-            {selectedB?.reason ?? (live ? "Waiting for Run B." : "No decision this round.")}
+            {selectedB?.reason ?? (live ? `Waiting for ${RUN_LABEL.B}.` : "No decision this round.")}
           </p>
         </div>
       ) : (

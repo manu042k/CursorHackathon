@@ -330,7 +330,9 @@ export function HypothesisForm() {
         <Separator />
         <CardHeader>
           <CardTitle>The one change</CardTitle>
-          <CardDescription>Only this differs between Run A (baseline) and Run B.</CardDescription>
+          <CardDescription>
+            Only this differs between Current (no change) and Changed (this one move).
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -384,15 +386,29 @@ export function HypothesisForm() {
           <p className="text-sm font-medium">Method</p>
           <div className="space-y-2">
             <Label htmlFor="rounds">Rounds</Label>
-            <Input
-              id="rounds"
-              name="rounds"
-              inputMode="numeric"
-              min={3}
-              max={8}
+            <Select
               value={String(rounds)}
-              onChange={(e) => setRounds(clampRounds(Number.parseInt(e.target.value, 10)))}
-            />
+              onValueChange={(value) => {
+                const next = clampRounds(Number.parseInt(value, 10));
+                setRounds(next);
+                setFromRound((current) => {
+                  if (!current.trim()) return current;
+                  return String(clampRound(Number.parseInt(current, 10), next));
+                });
+              }}
+            >
+              <SelectTrigger id="rounds" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <input type="hidden" name="rounds" value={String(rounds)} />
+              <SelectContent>
+                {[3, 4, 5, 6, 7, 8].map((n) => (
+                  <SelectItem key={n} value={String(n)}>
+                    {n}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <p className="text-sm text-muted-foreground">
             {rounds} rounds · seed {METHOD.random_seed} · 5 users · 1 competitor · 0 other variables

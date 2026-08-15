@@ -11,7 +11,7 @@ const rounds = fs.readFileSync(path.join(root, "src/lib/rounds.ts"), "utf8");
 
 const checks = [
   [trace.includes("decision") && trace.includes("!=="), "default differing decisions"],
-  [trace.includes("A {") || trace.includes("A {logA"), "A stacked over B"],
+  [trace.includes('runLabel("A")') && trace.includes('runLabel("B")'), "Current stacked over Changed"],
   [!css.includes("text-overflow") && !css.includes("ellipsis"), "no truncation"],
   [css.includes("agent-console-card") && css.includes("--color-primary"), "dark console card"],
   [finding.includes("firstMajorRound") && rounds.includes(">= 8"), "opens major round R4"],
