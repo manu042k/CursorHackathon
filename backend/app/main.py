@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import threading
 import uuid
 
@@ -14,7 +15,8 @@ from fastapi.responses import StreamingResponse
 from app.agents.cursor_adapter import CursorSdkAdapter
 from app.agents.fixture import FixtureAdapter
 from app.attribution import attribute_result
-from app.contracts import Adapter, CreateExperimentRequest, CreateExperimentResponse, Status
+from app.contracts import Adapter, CreateExperimentRequest, CreateExperimentResponse, HealthResponse, Status
+from app import settings
 from app.cursor_client import cursor_lifespan
 from app.paper import paper_from_disk, paper_from_result
 from app.registry import ExperimentRegistry
@@ -137,6 +139,18 @@ async def experiment_events(experiment_id: str):
             await asyncio.sleep(0.05)
 
     return StreamingResponse(generate(), media_type="text/event-stream")
+
+
+@app.get("/health", response_model=HealthResponse)
+def health() -> HealthResponse:
+    key_present = bool(os.environ.get("CURSOR_API_KEY", ""))
+    configured = key_present and getattr(app.state, "cursor", None) is not None
+    return HealthResponse(
+        ok=True,
+        cursor_configured=key_present,
+        model=os.environ.get("CURSOR_MODEL", settings.CURSOR_MODEL) if key_present else None,
+        adapter=Adapter.cursor if configured else Adapter.fixture,
+    )
 
 
 @app.get("/experiments/{experiment_id}/artifacts/{name}")
