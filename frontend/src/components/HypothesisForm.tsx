@@ -33,20 +33,23 @@ import type {
   PriceSensitivity,
   RoundCompleteEvent,
 } from "@/types/contracts";
-import { RUN_ROUNDS } from "@/types/contracts";
 import { forkedPrice, hypothesisSentence } from "@/lib/price";
 import { subscribeExperimentEvents } from "@/lib/sse";
 
 const METHOD = {
   market_size: 30,
   competitor_count: 1,
-  rounds: 4 as const,
   variable_type: "price_change" as const,
 };
 
-function clampRound(value: number): number {
+function clampRounds(value: number): number {
+  if (!Number.isFinite(value)) return 4;
+  return Math.min(8, Math.max(3, Math.round(value)));
+}
+
+function clampRound(value: number, maxRounds: number): number {
   if (!Number.isFinite(value)) return 1;
-  return Math.min(RUN_ROUNDS, Math.max(1, Math.round(value)));
+  return Math.min(maxRounds, Math.max(1, Math.round(value)));
 }
 
 export function HypothesisForm() {
@@ -57,6 +60,7 @@ export function HypothesisForm() {
   const [sensitivity, setSensitivity] = useState<PriceSensitivity | "">("");
   const [delta, setDelta] = useState("");
   const [fromRound, setFromRound] = useState("");
+  const [rounds, setRounds] = useState(4);
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [startedId, setStartedId] = useState<string | null>(null);
@@ -88,8 +92,8 @@ export function HypothesisForm() {
 
   useEffect(() => {
     if (!startedId || failed) return;
-    const aDone = ticks.some((tick) => tick.run_id === "A" && tick.round === RUN_ROUNDS);
-    const bDone = ticks.some((tick) => tick.run_id === "B" && tick.round === RUN_ROUNDS);
+    const aDone = ticks.some((tick) => tick.run_id === "A" && tick.round === rounds);
+    const bDone = ticks.some((tick) => tick.run_id === "B" && tick.round === rounds);
     if (!aDone || !bDone) return;
     let cancelled = false;
     const timer = window.setTimeout(() => {
@@ -101,10 +105,10 @@ export function HypothesisForm() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [ticks, startedId, failed, router]);
+  }, [ticks, startedId, failed, router, rounds]);
 
   const price = Number.parseFloat(currentPrice);
-  const roundN = clampRound(Number.parseInt(fromRound, 10));
+  const roundN = clampRound(Number.parseInt(fromRound, 10), rounds);
   const sentence = useMemo(() => {
     if (!productName.trim() || !Number.isFinite(price) || !delta.trim()) {
       return "Name the product and the one price change.";
@@ -133,7 +137,7 @@ export function HypothesisForm() {
       competitor_count: METHOD.competitor_count,
       competitor_price: Number.parseFloat(competitorPrice),
       buyer_price_sensitivity: sensitivity,
-      rounds: METHOD.rounds,
+      rounds: clampRounds(rounds),
       random_seed: Math.floor(Math.random() * 1_000_000_000),
       variable_type: METHOD.variable_type,
       variable_delta: delta.trim(),
@@ -164,7 +168,7 @@ export function HypothesisForm() {
         forkedPrice={forkedPrice(Number.isFinite(price) ? price : 0, delta || "+0%")}
         appliesFromRound={roundN}
         experimentId={startedId}
-        rounds={RUN_ROUNDS}
+        rounds={rounds}
       />
     );
   }
@@ -288,18 +292,30 @@ export function HypothesisForm() {
                 placeholder="1"
                 inputMode="numeric"
                 min={1}
-                max={RUN_ROUNDS}
+                max={rounds}
                 required
               />
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">Try +20%, −10%, or +5. Rounds are 1–{RUN_ROUNDS}.</p>
+          <p className="text-xs text-muted-foreground">Try +20%, −10%, or +5. Rounds are 1–{rounds}.</p>
         </CardContent>
         <Separator />
         <CardContent className="space-y-3" aria-label="Method">
           <p className="text-sm font-medium">Method</p>
+          <div className="space-y-2">
+            <Label htmlFor="rounds">Rounds</Label>
+            <Input
+              id="rounds"
+              name="rounds"
+              inputMode="numeric"
+              min={3}
+              max={8}
+              value={String(rounds)}
+              onChange={(e) => setRounds(clampRounds(Number.parseInt(e.target.value, 10)))}
+            />
+          </div>
           <p className="text-sm text-muted-foreground">
-            {RUN_ROUNDS} rounds · 30 buyers · 1 competitor · 0 other variables
+            {rounds} rounds · 30 buyers · 1 competitor · 0 other variables
           </p>
           {cursorReady ? (
             <label className="flex items-center gap-2 text-sm">
