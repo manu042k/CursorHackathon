@@ -5,18 +5,16 @@ from __future__ import annotations
 from pathlib import Path
 
 from app.contracts import (
-    Adapter,
     CreateExperimentRequest,
     ExperimentLogs,
     ExperimentPaper,
     MetricSeries,
-    Receipt,
     Roster,
-    Runtime,
     Status,
     SummaryNarrative,
 )
 from app.attribution import attribute_result, attribute_runs
+from app.narrative import build_receipt, grounded_narrative
 from app.store import read_artifact, write_artifact
 from app.twin_runner import TwinResult
 
@@ -42,38 +40,33 @@ def metrics_from_runs(run_a: dict, run_b: dict) -> MetricSeries:
     )
 
 
-def stub_receipt(experiment: CreateExperimentRequest, roster: Roster) -> Receipt:
-    _ = roster
-    model = "fixture" if experiment.adapter == Adapter.fixture else "composer-2.5"
-    return Receipt(
-        random_seed=experiment.random_seed,
-        prompt_hash="sha256:pending",
-        roster_hash="sha256:pending",
-        other_variables_changed=0,
-        adapter=experiment.adapter,
-        runtime=Runtime.local,
-        model=model,
-        tools=[],
-    )
-
-
 def _paper_rounds(raw: list) -> list:
     allowed = {"round", "delta", "top_contributors"}
     return [{key: row[key] for key in allowed if key in row} for row in raw]
 
 
+def _narrative(experiment, metrics, divergence, run_a, run_b) -> SummaryNarrative:
+    try:
+        return grounded_narrative(experiment, metrics, divergence, run_a, run_b)
+    except Exception:
+        return SummaryNarrative(text="", citations=[])
+
+
 def paper_from_result(result: TwinResult) -> ExperimentPaper:
     attribution = attribute_result(result)
     divergence = _paper_rounds(attribution["divergence_by_round"]) if attribution else []
+    metrics = metrics_from_runs(result.run_a, result.run_b)
     return ExperimentPaper(
         id=result.id,
         status=result.status,
         experiment=result.experiment,
         roster=result.roster,
-        receipt=stub_receipt(result.experiment, result.roster),
-        metrics=metrics_from_runs(result.run_a, result.run_b),
+        receipt=build_receipt(result.experiment, result.roster),
+        metrics=metrics,
         divergence_by_round=divergence,
-        summary_narrative=SummaryNarrative(text="", citations=[]),
+        summary_narrative=_narrative(
+            result.experiment, metrics, divergence, result.run_a, result.run_b
+        ),
         logs=ExperimentLogs(
             run_a=result.run_a.get("agent_logs", []),
             run_b=result.run_b.get("agent_logs", []),
@@ -99,21 +92,24 @@ def paper_from_disk(experiment_id: str, root: Path | None = None) -> ExperimentP
         attribution = attribute_runs(run_a, run_b, roster)
         write_artifact(experiment_id, "attribution", attribution, root=root)
         divergence = _paper_rounds(attribution.get("divergence_by_round", []))
+    metrics = metrics_from_runs(run_a, run_b)
     narrative = SummaryNarrative(text="", citations=[])
     try:
-        attribution = read_artifact(experiment_id, "attribution", root=root)
-        raw = attribution.get("summary_narrative")
+        stored = read_artifact(experiment_id, "attribution", root=root)
+        raw = stored.get("summary_narrative")
         if raw:
             narrative = SummaryNarrative.model_validate(raw)
     except FileNotFoundError:
         pass
+    if not narrative.citations:
+        narrative = _narrative(experiment, metrics, divergence, run_a, run_b)
     return ExperimentPaper(
         id=experiment_id,
         status=Status.complete,
         experiment=experiment,
         roster=roster,
-        receipt=stub_receipt(experiment, roster),
-        metrics=metrics_from_runs(run_a, run_b),
+        receipt=build_receipt(experiment, roster),
+        metrics=metrics,
         divergence_by_round=divergence,
         summary_narrative=narrative,
         logs=ExperimentLogs(
