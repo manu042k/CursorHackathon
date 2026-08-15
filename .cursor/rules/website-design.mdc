@@ -1,0 +1,43 @@
+---
+description: Use DESIGN-Guide.md for all website UI — colors, type, layout, and components
+globs: "**/*.{tsx,jsx,css,scss,html}"
+alwaysApply: false
+---
+
+# Website design system
+
+Before writing or changing any website UI, read [`DESIGN-Guide.md`](DESIGN-Guide.md) and follow it. That file is the source of truth for tokens, type, radius, components, and do/don'ts. Do not invent a parallel palette, type scale, or component language.
+
+## Surface and color
+
+- Default page surface is canvas white (`#ffffff`). Dark product bands are deep green (`#003c33`) or navy (`#071829`), full-width — not mid-tone page backgrounds.
+- Primary CTA is near-black (`#17171c`) on light, white on dark. Coral (`#ff7759`) is editorial taxonomy only, never the main CTA or a broad fill.
+- Action blue (`#1863dc`) is for links and editorial emphasis, not decorative surfaces.
+- Keep UI shells flat. No card drop shadows. Gradients are media-led only (hero imagery, product films), never generic section fills.
+
+## Type
+
+- Display: CohereText (fallback Space Grotesk / Inter). Body/UI: Unica77 (fallback Inter). Labels: CohereMono.
+- One oversized headline per page, then 16–24px UI copy. Weight 400 almost everywhere; size and contrast do hierarchy, not bold.
+- Display tracking is tight and negative. Do not collapse display/body into one generic sans.
+
+## Shape and layout
+
+- Primary buttons: pill (`32px`), 14px/500, padding `12px 24px`.
+- Major media cards: `22px` radius. Product/blog cards: `8px`. Do not use <8px on major media.
+- Whitespace is a trust signal. Prefer unframed rows, hairline rules (`#d9d9dd`), and open space over wrapping every block in a card.
+- Nav: logo left, menu center, CTA right.
+
+## Components to reuse, not reinvent
+
+Match names in `DESIGN-Guide.md`: `button-primary`, `button-secondary` (underlined text, no fill), `hero-photo-card`, `agent-console-card`, `trust-logo-strip`, `dark-feature-band`, `product-card`, `capability-card`.
+
+```tsx
+// BAD — generic SaaS chrome
+<button className="rounded-md bg-blue-600 shadow-lg">Get started</button>
+
+// GOOD — primary pill on white canvas
+<button className="rounded-[32px] bg-[#17171c] px-6 py-3 text-[14px] font-medium text-white">
+  Request a demo
+</button>
+```
