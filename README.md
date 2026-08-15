@@ -9,6 +9,11 @@ The **business owner** (platform user) enters a product, picks one action and ho
 
 **Shipped today:** Grok Bot fixture paper (8 rounds), `POST /experiments` starts the twin run immediately, buyers run sequentially. **Next:** research → confirm, parallel users, competitor after users, tunable rounds, extra figures — see [`architecture.md`](architecture.md) §1.1 and §14.
 
+<div>
+  <a href="https://ucr.zoom.us/clips/share/d6uLRZFOQz-AjEMdXZbweQ"><p>Butterfly Market Demo</p></a>
+  <a href="https://ucr.zoom.us/clips/share/d6uLRZFOQz-AjEMdXZbweQ"><img style="max-width: 300px; border-radius: 10px;" src="https://file.zoom.us/public/file/Yng6cQTERJW7qRnnTdlDWg/MS4zLu4JX7IlqfW1ykCQpsAaMpK_P6tNV3WFHeg1XpEoLEA8/k0sP7HppQAeHN2x_dMIsWw.gif" /></a>
+</div>
+
 # How we used Cursor
 We used the Cursor SDK to drive our agent decisions and the Cursor IDE to accelerate full-stack development.
 # How we used Grok 4.6
