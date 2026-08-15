@@ -39,6 +39,8 @@ def build_roster(seed: int = 42) -> Roster:
                 "loyalty_score": loyalty,
                 "price_sensitivity": sensitivity,
             },
+            agent_class="buyer",
+            archetype="price_sensitive" if "price_sensitive" in role else "enterprise",
         )
         for agent_id, role, weight, wtp, loyalty, sensitivity in BUYER_SPECS
     ]
@@ -48,6 +50,8 @@ def build_roster(seed: int = 42) -> Roster:
             role="incumbent_competitor",
             weight=0,
             traits={"name": COMPETITOR_NAME, "current_price": COMPETITOR_PRICE},
+            agent_class="competitor",
+            archetype="incumbent",
         )
     )
     agents.append(
@@ -56,6 +60,8 @@ def build_roster(seed: int = 42) -> Roster:
             role="analyst",
             weight=0,
             traits={"meta": True},
+            agent_class="analyst",
+            archetype="meta",
         )
     )
     return Roster(

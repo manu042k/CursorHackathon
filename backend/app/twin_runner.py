@@ -21,7 +21,9 @@ from app.contracts import (
 from app.history import history_summary
 from app.ledger import Ledger
 from app.market import Market, market_from_roster, parse_price_delta
+from app.roster.catalogue import normalize_roster
 from app.roster.fixed_grok_bot import build_roster
+from app.roster.profiles import persona_payload
 from app.store import write_artifact
 
 ALIGNMENT_ERROR = "alignment_broken"
@@ -118,7 +120,7 @@ async def _run_one(
                 round=round_n,
                 current_price=snap_price,
                 competitor_price=snap_comp,
-                persona=dict(agent.traits),
+                persona=persona_payload(agent),
                 status=status,
                 history_summary=history_summary(agent_logs, round_n),
             )
@@ -212,6 +214,7 @@ async def run_twin(
     if experiment.variable_type != VariableType.price_change:
         raise ValueError("only price_change is supported")
     roster = roster or build_roster(experiment.random_seed)
+    roster = normalize_roster(roster)
     opening_market = market_from_roster(
         roster, experiment.current_price, experiment.competitor_price
     )
