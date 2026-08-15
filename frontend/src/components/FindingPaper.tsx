@@ -5,6 +5,7 @@ import { Receipt } from "@/components/Receipt";
 import { MetricCards, PaperHeader } from "@/components/PaperHeader";
 import { AttributionBar } from "@/components/AttributionBar";
 import { ReasonTrace } from "@/components/ReasonTrace";
+import { RosterPreview } from "@/components/RosterPreview";
 import { TwinChart } from "@/components/TwinChart";
 import { firstMajorRound } from "@/lib/rounds";
 import type { ExperimentPaper } from "@/types/contracts";
@@ -40,6 +41,7 @@ export function FindingPaper({ paper }: { paper: ExperimentPaper }) {
         selectedRound={selectedRound}
         onSelectRound={setSelectedRound}
       />
+      <RosterPreview paper={paper} />
       <Receipt receipt={paper.receipt} />
     </article>
   );
