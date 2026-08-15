@@ -23,7 +23,7 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata = {
-  title: "Counterfactual Replay",
+  title: "Butterfly Market",
   description: "Twin-run market simulation",
 };
 

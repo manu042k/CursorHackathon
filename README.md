@@ -1,4 +1,4 @@
-# Counterfactual Replay
+# Butterfly Market
 
 A controlled twin-run market experiment: same seed, same frozen roster, **one** variable changed. Divergence is causal *inside the simulation*. This is not a forecast.
 

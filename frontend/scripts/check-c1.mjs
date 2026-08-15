@@ -27,7 +27,7 @@ const checks = [
 ];
 
 const nav = fs.readFileSync(path.join(root, "src/components/AppNav.tsx"), "utf8");
-checks.push([nav.includes("Replay"), "nav logo left"]);
+checks.push([nav.includes("butterfly-market.png"), "nav logo left"]);
 checks.push([!/account|avatar|sign in/i.test(nav), "no fake account menu"]);
 
 const button = fs.readFileSync(path.join(root, "src/app/shell.css"), "utf8");
