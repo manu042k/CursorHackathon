@@ -128,6 +128,8 @@ export interface RosterAgent {
   role: string;
   weight: number;
   traits: Record<string, unknown>;
+  agent_class?: "buyer" | "competitor" | "analyst" | null;
+  archetype?: string | null;
 }
 
 export interface Roster {

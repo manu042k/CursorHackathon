@@ -25,12 +25,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ApiDownError, createExperiment, getExperiment, getHealth } from "@/lib/api";
+import { RosterConfirm } from "@/components/RosterConfirm";
+import { ApiDownError, createExperiment, getExperiment, getHealth, startExperiment, waitRosterReady } from "@/lib/api";
 import type {
   Adapter,
   CreateExperimentRequest,
   DecisionEvent,
   PriceSensitivity,
+  Roster,
   RoundCompleteEvent,
 } from "@/types/contracts";
 import { forkedPrice, hypothesisSentence } from "@/lib/price";
@@ -64,6 +66,8 @@ export function HypothesisForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [startedId, setStartedId] = useState<string | null>(null);
+  const [experimentId, setExperimentId] = useState<string | null>(null);
+  const [roster, setRoster] = useState<Roster | null>(null);
   const [pending, setPending] = useState(false);
   const [ticks, setTicks] = useState<RoundCompleteEvent[]>([]);
   const [decisions, setDecisions] = useState<DecisionEvent[]>([]);
@@ -120,6 +124,8 @@ export function HypothesisForm() {
     event.preventDefault();
     setError(null);
     setStartedId(null);
+    setExperimentId(null);
+    setRoster(null);
     setTicks([]);
     setDecisions([]);
     setFailed(null);
@@ -146,12 +152,29 @@ export function HypothesisForm() {
     };
     try {
       const created = await createExperiment(body);
-      setStartedId(created.id);
+      const proposed = await waitRosterReady(created.id);
+      setExperimentId(created.id);
+      setRoster(proposed);
     } catch (err) {
       const message =
         err instanceof ApiDownError
           ? err.message
           : "API is not running.";
+      setError(message);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function onConfirm() {
+    if (!experimentId) return;
+    setError(null);
+    setPending(true);
+    try {
+      await startExperiment(experimentId);
+      setStartedId(experimentId);
+    } catch (err) {
+      const message = err instanceof ApiDownError ? err.message : "API is not running.";
       setError(message);
     } finally {
       setPending(false);
@@ -170,6 +193,19 @@ export function HypothesisForm() {
         experimentId={startedId}
         rounds={rounds}
       />
+    );
+  }
+
+  if (roster && experimentId) {
+    return (
+      <div>
+        {error ? (
+          <Alert className="mx-auto mt-6 max-w-5xl border-destructive text-destructive">
+            {error}
+          </Alert>
+        ) : null}
+        <RosterConfirm roster={roster} pending={pending} onConfirm={() => void onConfirm()} />
+      </div>
     );
   }
 

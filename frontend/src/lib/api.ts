@@ -3,6 +3,7 @@ import type {
   CreateExperimentResponse,
   ExperimentListItem,
   HealthResponse,
+  Roster,
 } from "@/types/contracts";
 
 export const API_BASE =
@@ -62,6 +63,37 @@ export async function createExperiment(
     throw new ApiDownError(`API returned ${response.status}.`);
   }
   return (await response.json()) as CreateExperimentResponse;
+}
+
+export async function startExperiment(id: string): Promise<CreateExperimentResponse> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}/experiments/${id}/start`, { method: "POST" });
+  } catch {
+    throw new ApiDownError();
+  }
+  if (!response.ok && response.status !== 202) {
+    throw new ApiDownError(`API returned ${response.status}.`);
+  }
+  return (await response.json()) as CreateExperimentResponse;
+}
+
+export async function waitRosterReady(id: string, timeoutMs = 20000): Promise<Roster> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const { status, body } = await getExperiment(id);
+    if (
+      status === 200 &&
+      body &&
+      typeof body === "object" &&
+      (body as { status?: string }).status === "roster_ready" &&
+      "roster" in body
+    ) {
+      return (body as { roster: Roster }).roster;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+  throw new ApiDownError("Roster was not ready in time.");
 }
 
 export async function getHealth(): Promise<HealthResponse | null> {
