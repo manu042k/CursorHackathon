@@ -4,7 +4,7 @@
 
 **Goal:** Make the shipped twin-run product match the locked owner flow: research → confirm 5 users + 1 competitor + 1 analyst → N-round twin (default 4) with parallel buyers and competitor-on-S1 → ledgered events → paper with share, MRR, persona outcomes, and competitor path.
 
-**Architecture:** Keep the hexagonal FastAPI + Next.js split. Do not add a business-agent class. Research runs once before the twin (Reddit + web search → filter → distill; ADR-12); freeze the roster for both runs. Engine arithmetic stays in `market.py` and is handed into `AgentDecisionRequest`. Live social fetch during rounds is forbidden. One git branch per task, named `us-<id>-<slug>`, from updated `main` (see `.cursor/rules/story-branch-workflow.mdc`).
+**Architecture:** Keep the hexagonal FastAPI + Next.js split. Do not add a business-agent class. Each roster agent has four layers: class, archetype **label**, frozen `ArchetypeProfile` (generalized mindset + behavior, same text every experiment), and instance (WTP, evidence). Research runs once before the twin (Reddit + web search → filter → distill onto **existing** labels; ADR-12) and must not rewrite mindset/behavior. Engine arithmetic stays in `market.py`. Live social fetch during rounds is forbidden. One git branch per task, named `us-<id>-<slug>`, from updated `main` (see `.cursor/rules/story-branch-workflow.mdc`).
 
 **Tech Stack:** FastAPI, Pydantic, pytest, `cursor-sdk` (`AsyncAgent.prompt`, `tools=[]`), Next.js App Router, TypeScript, DESIGN-Guide tokens. Ledger: Supabase Postgres via `DATABASE_URL` (session pooler, `sslmode=require`); JSON under `data/experiments/{id}/` remains milestone export only.
 
@@ -720,7 +720,7 @@ PROFILES: dict[str, ArchetypeProfile] = {
             "recommendation. Their audience is the paper’s reason console, not the market. They "
             "would rather under-claim (“share moved because buyer_2 switched”) than invent a "
             "story the log does not support. A good note names who moved, on which run, after "
-            "which price. They never propose an intervention of their own."
+            "which price. They never propose an intervention of their own, even when asked."
         ),
         social_voice=(
             "Neutral, specific, past-tense. “Buyer_2 switched on B after the hike; competitor "
@@ -848,7 +848,7 @@ Do not break golden JSON load: papers without `agent_class` stay valid (`None` d
 
 Run: `cd backend; .venv/Scripts/pytest tests/test_catalogue.py tests/test_twin_determinism.py -q`
 
-Also run `tests/test_fixed_grok_bot.py` or `tests/test_fixed_acme.py` if present. Expected: PASS. Every archetype’s `mindset` is ≥ 400 characters.
+Also run `tests/test_fixed_grok_bot.py` or `tests/test_fixed_acme.py` if present. Expected: PASS. Every archetype’s `mindset` is 150–250 words.
 
 - [ ] **Step 5: Commit**
 
