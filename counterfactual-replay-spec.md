@@ -65,6 +65,8 @@ If you can delete the model and still demo the app, you built a dashboard on fak
 2. **Situated decisions** — each buyer reasons from willingness-to-pay, loyalty, and the competitor’s price — not a hardcoded threshold table.
 3. **Grounded narrative** — end summary is assembled from logged reasons. If a sentence cannot be cited to an agent-round, it does not ship.
 
+**Implementation binding:** live decisions are Cursor local agents via the Python SDK (`cursor-sdk`, `AsyncAgent.prompt`). See [`architecture.md`](architecture.md) ADR-7. The browser never holds `CURSOR_API_KEY`.
+
 ---
 
 ## 3. What we are actually building (scope for one day)
