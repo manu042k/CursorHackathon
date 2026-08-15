@@ -96,7 +96,7 @@ export function PaperLoader({ id }: { id: string }) {
           {view.error}
         </p>
         <p className="finding__next">
-          <Link href="/" className="button-primary">
+          <Link href="/new" className="button-primary">
             New experiment
           </Link>
         </p>
@@ -110,7 +110,7 @@ export function PaperLoader({ id }: { id: string }) {
         <h1 className="paper-header__title">No paper for {id}</h1>
         <p>This id is not in the record. Numbers from Grok Bot are not shown.</p>
         <p className="finding__next">
-          <Link href="/" className="button-primary">
+          <Link href="/new" className="button-primary">
             New experiment
           </Link>
         </p>

@@ -45,7 +45,7 @@ export function TrajectoryChart({
   onSelectRound,
   appliesFromRound,
   metric,
-  totalRounds = 8,
+  totalRounds = 4,
 }: Props) {
   const uid = useId().replace(/:/g, "");
   const fillA = `fill-a-${uid}`;

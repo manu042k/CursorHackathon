@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ButtonPrimary } from "@/components/ButtonPrimary";
@@ -14,40 +13,30 @@ import type {
   PriceSensitivity,
   RoundCompleteEvent,
 } from "@/types/contracts";
+import { RUN_ROUNDS } from "@/types/contracts";
 import { forkedPrice, hypothesisSentence } from "@/lib/price";
 import { subscribeExperimentEvents } from "@/lib/sse";
 
-const GROK_BOT: CreateExperimentRequest = {
-  product_name: "Grok Bot",
-  product_description:
-    "Always-on AI teammates with their own cloud computer. They sign into your tools, finish jobs end to end, and only come back for approval.",
-  current_price: 120,
+const METHOD = {
   market_size: 30,
   competitor_count: 1,
-  competitor_price: 100,
-  buyer_price_sensitivity: "medium",
-  rounds: 8,
-  random_seed: 42,
-  variable_type: "price_change",
-  variable_delta: "+20%",
-  applies_from_round: 1,
-  adapter: "fixture",
+  rounds: 4 as const,
+  variable_type: "price_change" as const,
 };
 
 function clampRound(value: number): number {
   if (!Number.isFinite(value)) return 1;
-  return Math.min(8, Math.max(1, Math.round(value)));
+  return Math.min(RUN_ROUNDS, Math.max(1, Math.round(value)));
 }
 
 export function HypothesisForm() {
-  const [productName, setProductName] = useState(GROK_BOT.product_name);
-  const [productDescription, setProductDescription] = useState(GROK_BOT.product_description);
-  const [currentPrice, setCurrentPrice] = useState(String(GROK_BOT.current_price));
-  const [competitorPrice, setCompetitorPrice] = useState(String(GROK_BOT.competitor_price));
-  const [sensitivity, setSensitivity] = useState<PriceSensitivity>(GROK_BOT.buyer_price_sensitivity);
-  const [delta, setDelta] = useState(GROK_BOT.variable_delta);
-  const [fromRound, setFromRound] = useState(String(GROK_BOT.applies_from_round));
-  const [seed, setSeed] = useState(String(GROK_BOT.random_seed));
+  const [productName, setProductName] = useState("");
+  const [productDescription, setProductDescription] = useState("");
+  const [currentPrice, setCurrentPrice] = useState("");
+  const [competitorPrice, setCompetitorPrice] = useState("");
+  const [sensitivity, setSensitivity] = useState<PriceSensitivity | "">("");
+  const [delta, setDelta] = useState("");
+  const [fromRound, setFromRound] = useState("");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [startedId, setStartedId] = useState<string | null>(null);
@@ -79,8 +68,8 @@ export function HypothesisForm() {
 
   useEffect(() => {
     if (!startedId || failed) return;
-    const aDone = ticks.some((tick) => tick.run_id === "A" && tick.round === 8);
-    const bDone = ticks.some((tick) => tick.run_id === "B" && tick.round === 8);
+    const aDone = ticks.some((tick) => tick.run_id === "A" && tick.round === RUN_ROUNDS);
+    const bDone = ticks.some((tick) => tick.run_id === "B" && tick.round === RUN_ROUNDS);
     if (!aDone || !bDone) return;
     let cancelled = false;
     const timer = window.setTimeout(() => {
@@ -94,26 +83,14 @@ export function HypothesisForm() {
     };
   }, [ticks, startedId, failed, router]);
 
-  const price = Number.parseFloat(currentPrice) || 0;
+  const price = Number.parseFloat(currentPrice);
   const roundN = clampRound(Number.parseInt(fromRound, 10));
-  const seedN = Number.parseInt(seed, 10) || GROK_BOT.random_seed;
-  const sentence = useMemo(
-    () => hypothesisSentence(productName || "this product", price, delta || "+0%", roundN),
-    [productName, price, delta, roundN]
-  );
-
-  function resetDefaults() {
-    setProductName(GROK_BOT.product_name);
-    setProductDescription(GROK_BOT.product_description);
-    setCurrentPrice(String(GROK_BOT.current_price));
-    setCompetitorPrice(String(GROK_BOT.competitor_price));
-    setSensitivity(GROK_BOT.buyer_price_sensitivity);
-    setDelta(GROK_BOT.variable_delta);
-    setFromRound(String(GROK_BOT.applies_from_round));
-    setSeed(String(GROK_BOT.random_seed));
-    setAdapter("fixture");
-    setError(null);
-  }
+  const sentence = useMemo(() => {
+    if (!productName.trim() || !Number.isFinite(price) || !delta.trim()) {
+      return "Name the product and the one price change.";
+    }
+    return hypothesisSentence(productName.trim(), price, delta.trim(), roundN);
+  }, [productName, price, delta, roundN]);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -123,17 +100,24 @@ export function HypothesisForm() {
     setDecisions([]);
     setFailed(null);
     setPending(true);
+    if (!sensitivity || !Number.isFinite(price) || !Number.isFinite(Number.parseFloat(competitorPrice))) {
+      setError("Fill in the product, prices, and sensitivity.");
+      setPending(false);
+      return;
+    }
     const body: CreateExperimentRequest = {
-      ...GROK_BOT,
-      product_name: productName.trim() || GROK_BOT.product_name,
-      product_description: productDescription.trim() || GROK_BOT.product_description,
+      product_name: productName.trim(),
+      product_description: productDescription.trim(),
       current_price: price,
-      competitor_price: Number.parseFloat(competitorPrice) || 0,
+      market_size: METHOD.market_size,
+      competitor_count: METHOD.competitor_count,
+      competitor_price: Number.parseFloat(competitorPrice),
       buyer_price_sensitivity: sensitivity,
-      variable_type: "price_change",
-      variable_delta: delta.trim() || GROK_BOT.variable_delta,
+      rounds: METHOD.rounds,
+      random_seed: Math.floor(Math.random() * 1_000_000_000),
+      variable_type: METHOD.variable_type,
+      variable_delta: delta.trim(),
       applies_from_round: roundN,
-      random_seed: seedN,
       adapter,
     };
     try {
@@ -144,7 +128,7 @@ export function HypothesisForm() {
         err instanceof ApiDownError
           ? err.message
           : "API is not running.";
-      setError(`${message} Open the prepared Grok Bot paper.`);
+      setError(message);
     } finally {
       setPending(false);
     }
@@ -156,10 +140,11 @@ export function HypothesisForm() {
         ticks={ticks}
         decisions={decisions}
         failed={failed}
-        basePrice={price}
-        forkedPrice={forkedPrice(price, delta || "+0%")}
+        basePrice={Number.isFinite(price) ? price : 0}
+        forkedPrice={forkedPrice(Number.isFinite(price) ? price : 0, delta || "+0%")}
         appliesFromRound={roundN}
         experimentId={startedId}
+        rounds={RUN_ROUNDS}
       />
     );
   }
@@ -175,31 +160,23 @@ export function HypothesisForm() {
         <ButtonPrimary type="submit" disabled={pending}>
           Run this experiment
         </ButtonPrimary>
-        <p>
-          <Link href="/experiments/grok-bot-seed-42" className="button-secondary">
-            Open the prepared Grok Bot paper
-          </Link>
-        </p>
         {error ? (
           <p className="setup__error" role="alert">
-            {error}{" "}
-            <Link href="/experiments/grok-bot-seed-42" className="button-secondary">
-              Open the prepared Grok Bot paper
-            </Link>
+            {error}
           </p>
         ) : null}
       </div>
       <div className="setup__fields">
         <fieldset>
           <legend>Product</legend>
-          <p className="setup__group-hint">Edit these. Grok Bot is only a starting point.</p>
+          <p className="setup__group-hint">Enter the product and prices.</p>
           <label>
             Name
             <input
               name="product_name"
               value={productName}
               onChange={(e) => setProductName(e.target.value)}
-              placeholder="Grok Bot"
+              placeholder="Product name"
               required
             />
           </label>
@@ -242,7 +219,11 @@ export function HypothesisForm() {
               name="buyer_price_sensitivity"
               value={sensitivity}
               onChange={(e) => setSensitivity(e.target.value as PriceSensitivity)}
+              required
             >
+              <option value="" disabled>
+                Select
+              </option>
               <option value="low">low</option>
               <option value="medium">medium</option>
               <option value="high">high</option>
@@ -273,28 +254,21 @@ export function HypothesisForm() {
                 name="applies_from_round"
                 value={fromRound}
                 onChange={(e) => setFromRound(e.target.value)}
+                placeholder="1"
                 inputMode="numeric"
                 min={1}
-                max={8}
+                max={RUN_ROUNDS}
                 required
               />
             </label>
           </div>
-          <p className="setup__field-hint">Try +20%, −10%, or +5. Rounds are 1–8.</p>
+          <p className="setup__field-hint">Try +20%, −10%, or +5. Rounds are 1–{RUN_ROUNDS}.</p>
         </fieldset>
         <div className="method-strip" aria-label="Method">
           <p className="method-strip__label">Method</p>
-          <p className="setup__group-hint">8 rounds · 30 buyers · 1 competitor · 0 other variables</p>
-          <label>
-            Seed
-            <input
-              name="random_seed"
-              value={seed}
-              onChange={(e) => setSeed(e.target.value)}
-              inputMode="numeric"
-              required
-            />
-          </label>
+          <p className="setup__group-hint">
+            {RUN_ROUNDS} rounds · 30 buyers · 1 competitor · 0 other variables
+          </p>
           {cursorReady ? (
             <label className="method-strip__cursor">
               <input
@@ -307,7 +281,7 @@ export function HypothesisForm() {
           ) : null}
           <Receipt
             receipt={{
-              random_seed: seedN,
+              random_seed: 0,
               prompt_hash: "—",
               roster_hash: "—",
               other_variables_changed: 0,
@@ -317,11 +291,6 @@ export function HypothesisForm() {
               tools: [],
             }}
           />
-          <p>
-            <button type="button" className="button-secondary" onClick={resetDefaults}>
-              Reset to Grok Bot defaults
-            </button>
-          </p>
         </div>
       </div>
     </form>

@@ -26,7 +26,7 @@ export function TwinChart({ paper, selectedRound, onSelectRound }: Props) {
     }
     if (event.key === "ArrowRight") {
       event.preventDefault();
-      onSelectRound(Math.min(8, selectedRound + 1));
+      onSelectRound(Math.min(seriesA.length, selectedRound + 1));
     }
   }
 
@@ -63,6 +63,7 @@ export function TwinChart({ paper, selectedRound, onSelectRound }: Props) {
         onSelectRound={onSelectRound}
         appliesFromRound={paper.experiment.applies_from_round}
         metric={metric}
+        totalRounds={seriesA.length || 4}
       />
       <div className="round-pills" role="list">
         {rounds.map((round) => (

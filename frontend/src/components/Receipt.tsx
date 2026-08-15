@@ -25,7 +25,6 @@ type Props = {
 export function Receipt({ receipt }: Props) {
   const value = { ...EMPTY, ...receipt };
   const rows = [
-    ["seed", String(value.random_seed)],
     ["adapter", value.adapter],
     ["runtime", value.runtime],
     ["model", value.model || "—"],

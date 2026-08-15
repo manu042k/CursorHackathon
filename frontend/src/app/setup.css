@@ -1,10 +1,10 @@
 .setup {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: var(--space-section) var(--space-xxl);
-  max-width: 1120px;
+  gap: var(--space-xxl);
+  max-width: 1040px;
   margin: 0 auto;
-  padding: var(--space-section) var(--space-xl);
+  padding: var(--space-xxl) var(--space-xl);
 }
 
 .setup__kicker {
@@ -136,7 +136,7 @@
 .run-progress {
   max-width: 960px;
   margin: 0 auto;
-  padding: var(--space-section) var(--space-xl);
+  padding: var(--space-xxl) var(--space-xl);
 }
 
 .run-progress__now {

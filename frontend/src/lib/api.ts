@@ -1,6 +1,7 @@
 import type {
   CreateExperimentRequest,
   CreateExperimentResponse,
+  ExperimentListItem,
   HealthResponse,
 } from "@/types/contracts";
 
@@ -31,6 +32,17 @@ export async function getExperiment(id: string): Promise<{
     body = null;
   }
   return { status: response.status, body };
+}
+
+export async function listExperiments(): Promise<ExperimentListItem[]> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}/experiments`);
+  } catch {
+    throw new ApiDownError();
+  }
+  if (!response.ok) throw new ApiDownError(`API returned ${response.status}.`);
+  return (await response.json()) as ExperimentListItem[];
 }
 
 export async function createExperiment(

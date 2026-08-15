@@ -36,6 +36,8 @@ export const COMPETITOR_DECISIONS = [
 ] as const satisfies readonly CompetitorDecision[];
 export const RUN_IDS = ["A", "B"] as const satisfies readonly RunId[];
 
+export const RUN_ROUNDS = 4;
+
 export interface CreateExperimentRequest {
   product_name: string;
   product_description: string;
@@ -44,7 +46,7 @@ export interface CreateExperimentRequest {
   competitor_count: number;
   competitor_price: number;
   buyer_price_sensitivity: PriceSensitivity;
-  rounds: 8;
+  rounds: 4 | 8;
   random_seed: number;
   variable_type: VariableType;
   variable_delta: string;
@@ -143,6 +145,17 @@ export interface ExperimentPaper {
   divergence_by_round: DivergenceRound[];
   summary_narrative: SummaryNarrative;
   logs: ExperimentLogs;
+}
+
+export interface ExperimentListItem {
+  id: string;
+  status: Status;
+  product_name: string;
+  variable_delta: string;
+  current_price: number;
+  competitor_price: number;
+  rounds: number;
+  updated_at: string;
 }
 
 export interface HealthResponse {

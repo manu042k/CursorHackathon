@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { AgentLog, ExperimentPaper, RosterAgent } from "@/types/contracts";
+import { OrchestrationGraph } from "@/components/OrchestrationGraph";
+import { forkedPrice } from "@/lib/price";
+import type { AgentLog, ExperimentPaper, RosterAgent, RoundCompleteEvent } from "@/types/contracts";
 
 function byAgent(logs: AgentLog[], round: number): Map<string, AgentLog> {
   return new Map(logs.filter((log) => log.round === round).map((log) => [log.agent_id, log]));
@@ -35,6 +37,20 @@ export function ReasonTrace({
     return all.filter((id) => (a.get(id)?.decision ?? "") !== (b.get(id)?.decision ?? ""));
   }, [a, b, everyone]);
   const splits = ids.filter((id) => (a.get(id)?.decision ?? "") !== (b.get(id)?.decision ?? ""));
+  const ticks: RoundCompleteEvent[] = [
+    ...paper.metrics.share_a.map((share, index) => ({
+      run_id: "A" as const,
+      round: index + 1,
+      share,
+      mrr: paper.metrics.mrr_a[index] ?? 0,
+    })),
+    ...paper.metrics.share_b.map((share, index) => ({
+      run_id: "B" as const,
+      round: index + 1,
+      share,
+      mrr: paper.metrics.mrr_b[index] ?? 0,
+    })),
+  ];
 
   function scrollTo(agentId: string, round: number) {
     onSelectRound(round);
@@ -53,6 +69,19 @@ export function ReasonTrace({
           {everyone ? "Show differences" : "Show everyone"}
         </button>
       </header>
+      <OrchestrationGraph
+        round={selectedRound}
+        logsA={paper.logs.run_a}
+        logsB={paper.logs.run_b}
+        ticks={ticks}
+        basePrice={paper.experiment.current_price}
+        forkedPrice={forkedPrice(paper.experiment.current_price, paper.experiment.variable_delta)}
+        roster={paper.roster.agents}
+        onSelectAgent={(agentId) => {
+          setEveryone(true);
+          scrollTo(agentId, selectedRound);
+        }}
+      />
       {splits.length > 0 ? (
         <p className="agent-console-card__why">
           {splits.length === 1 ? "This is what caused the fork." : "These agents caused the fork."} Same

@@ -6,10 +6,7 @@ import { fileURLToPath } from "url";
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const receipt = fs.readFileSync(path.join(root, "src/components/Receipt.tsx"), "utf8");
 const form = fs.readFileSync(path.join(root, "src/components/HypothesisForm.tsx"), "utf8");
-const paper = fs.readFileSync(
-  path.join(root, "src/app/experiments/[id]/page.tsx"),
-  "utf8"
-);
+const finding = fs.readFileSync(path.join(root, "src/components/FindingPaper.tsx"), "utf8");
 const css = fs.readFileSync(path.join(root, "src/app/shell.css"), "utf8");
 
 const checks = [
@@ -23,7 +20,7 @@ const checks = [
   [receipt.includes("—"), "em-dash pending hashes"],
   [receipt.includes("slice(0, 8)"), "short hashes"],
   [form.includes("<Receipt"), "used on setup"],
-  [paper.includes("<Receipt"), "used on results"],
+  [finding.includes("<Receipt"), "used on results"],
   [css.includes("font-family: var(--font-mono)"), "mono labels"],
   [!receipt.includes("chip") && !receipt.includes("#ff7759"), "not rainbow chips"],
 ];

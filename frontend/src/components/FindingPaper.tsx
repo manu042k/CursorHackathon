@@ -45,7 +45,7 @@ export function FindingPaper({ paper }: { paper: ExperimentPaper }) {
       <RosterPreview paper={paper} />
       <Receipt receipt={paper.receipt} />
       <p className="finding__next">
-        <Link href="/" className="button-primary">
+        <Link href="/new" className="button-primary">
           New experiment
         </Link>
       </p>

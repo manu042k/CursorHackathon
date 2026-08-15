@@ -65,7 +65,7 @@ class CreateExperimentRequest(FrozenModel):
     competitor_count: int
     competitor_price: float
     buyer_price_sensitivity: PriceSensitivity
-    rounds: Literal[8] = 8
+    rounds: Literal[4, 8] = 4
     random_seed: int
     variable_type: VariableType
     variable_delta: str
@@ -171,6 +171,17 @@ class HealthResponse(FrozenModel):
     cursor_configured: bool
     model: str | None = None
     adapter: Adapter
+
+
+class ExperimentListItem(FrozenModel):
+    id: str
+    status: Status
+    product_name: str
+    variable_delta: str
+    current_price: float
+    competitor_price: float
+    rounds: int
+    updated_at: str
 
 
 class RoundCompleteEvent(FrozenModel):
