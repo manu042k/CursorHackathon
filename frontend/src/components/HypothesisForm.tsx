@@ -6,10 +6,10 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ButtonPrimary } from "@/components/ButtonPrimary";
 import { Receipt } from "@/components/Receipt";
 import { RunProgress } from "@/components/RunProgress";
-import { ApiDownError, createExperiment } from "@/lib/api";
+import { ApiDownError, createExperiment, getHealth } from "@/lib/api";
+import type { Adapter, CreateExperimentRequest, RoundCompleteEvent } from "@/types/contracts";
 import { hypothesisSentence } from "@/lib/price";
 import { subscribeExperimentEvents } from "@/lib/sse";
-import type { CreateExperimentRequest, RoundCompleteEvent } from "@/types/contracts";
 
 const ACME: CreateExperimentRequest = {
   product_name: "Acme Analytics",
@@ -41,6 +41,14 @@ export function HypothesisForm() {
   const [pending, setPending] = useState(false);
   const [ticks, setTicks] = useState<RoundCompleteEvent[]>([]);
   const [failed, setFailed] = useState<string | null>(null);
+  const [adapter, setAdapter] = useState<Adapter>("fixture");
+  const [cursorReady, setCursorReady] = useState(false);
+
+  useEffect(() => {
+    void getHealth().then((health) => {
+      if (health?.cursor_configured) setCursorReady(true);
+    });
+  }, []);
 
   useEffect(() => {
     if (!startedId) return;
@@ -76,7 +84,7 @@ export function HypothesisForm() {
       variable_delta: delta,
       applies_from_round: roundN,
       random_seed: seed,
-      adapter: "fixture",
+      adapter,
     };
     try {
       const created = await createExperiment(body);
@@ -173,13 +181,23 @@ export function HypothesisForm() {
         </fieldset>
         <div className="method-strip" aria-label="Method">
           <p className="method-strip__label">Method</p>
+          {cursorReady ? (
+            <label className="method-strip__cursor">
+              <input
+                type="checkbox"
+                checked={adapter === "cursor"}
+                onChange={(e) => setAdapter(e.target.checked ? "cursor" : "fixture")}
+              />
+              Use Cursor SDK
+            </label>
+          ) : null}
           <Receipt
             receipt={{
               random_seed: seed,
               prompt_hash: "—",
               roster_hash: "—",
               other_variables_changed: 0,
-              adapter: "fixture",
+              adapter,
               runtime: "local",
               model: "—",
               tools: [],
