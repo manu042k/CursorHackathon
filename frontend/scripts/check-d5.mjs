@@ -8,6 +8,7 @@ const finding = fs.readFileSync(path.join(root, "src/components/FindingPaper.tsx
 const checks = [
   [finding.includes("summary_narrative.text"), "renders narrative text"],
   [finding.includes("citation.agent_id} · R{citation.round} · {citation.run_id"), "citations as buyer_3 · R4 · B"],
+  [finding.includes("FindingSummary"), "closing summary at end of paper"],
 ];
 const failed = checks.filter(([ok]) => !ok);
 if (failed.length) {

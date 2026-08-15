@@ -10,6 +10,7 @@ import { RosterPreview } from "@/components/RosterPreview";
 import { TwinChart } from "@/components/TwinChart";
 import { PersonaOutcomes } from "@/components/PersonaOutcomes";
 import { CompetitorPath } from "@/components/CompetitorPath";
+import { FindingSummary } from "@/components/FindingSummary";
 import { Button } from "@/components/ui/button";
 import { firstMajorRound } from "@/lib/rounds";
 import type { ExperimentPaper } from "@/types/contracts";
@@ -50,6 +51,7 @@ export function FindingPaper({ paper }: { paper: ExperimentPaper }) {
       />
       <RosterPreview paper={paper} />
       <Receipt receipt={paper.receipt} />
+      <FindingSummary paper={paper} />
       <p className="finding__next mt-10">
         <Button asChild>
           <Link href="/new">New experiment</Link>
