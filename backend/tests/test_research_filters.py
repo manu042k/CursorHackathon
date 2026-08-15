@@ -46,3 +46,13 @@ def test_keeps_when_product_name_matches():
     items = [_item(url=f"https://reddit.com/r/saas/{i}", text=f"SaaS price plan {i} switch") for i in range(20)]
     kept = filter_items(items, now=NOW)
     assert len(kept) <= 8
+
+
+def test_search_sourced_item_without_score_is_kept():
+    item = _item()
+    item.pop("score")
+    item.pop("num_comments")
+    item["score"] = None
+    item["num_comments"] = None
+    kept = filter_items([item], now=NOW)
+    assert len(kept) == 1

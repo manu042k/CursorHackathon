@@ -61,3 +61,69 @@ def test_distill_maps_labels_and_does_not_author_mindset():
         assert "profile" not in agent.traits
         payload = persona_payload(agent)
         assert payload["profile"]["mindset"] == profile_for(agent.archetype).mindset
+
+
+def _reddit_item(i: int) -> dict:
+    return {
+        "source": "reddit",
+        "id": f"https://www.reddit.com/r/saas/comments/{i}/thread",
+        "subreddit": "saas",
+        "title": f"SaaS price hike thread {i}",
+        "text": "We switched after a 20% price hike; seat plan not worth it.",
+        "score": None,
+        "num_comments": None,
+        "created_utc": None,
+        "nsfw": False,
+        "removed": False,
+        "stickied": False,
+        "url": f"https://www.reddit.com/r/saas/comments/{i}/thread",
+        "category": "saas",
+    }
+
+
+def test_cursor_path_searches_product_and_category(monkeypatch, tmp_path):
+    captured: dict = {}
+
+    def fake_reddit(category, queries, **kwargs):
+        captured["category"] = category
+        captured["queries"] = queries
+        return [_reddit_item(i) for i in range(5)]
+
+    monkeypatch.setattr("app.roster.generate.fetch_reddit", fake_reddit)
+    monkeypatch.setattr("app.roster.generate.fetch_web", lambda queries, **kwargs: [])
+    body = _body("Always-on AI teammates")
+    roster = propose_roster(
+        body,
+        adapter=Adapter.cursor,
+        experiment_id="exp_reddit",
+        root=tmp_path,
+    )
+    validate_catalogue(roster)
+    assert captured["category"] == "saas"
+    blob = " ".join(captured["queries"]).lower()
+    assert "grok bot" in blob
+    assert "saas" in blob
+    assert any("site:reddit.com/r/" in q for q in captured["queries"])
+    from app.store import experiment_dir
+    import json
+
+    saved = json.loads((experiment_dir("exp_reddit", tmp_path) / "research.json").read_text(encoding="utf-8"))
+    assert saved["quality"] == "ok"
+    assert saved["kept_count"] >= 4
+
+
+def test_cursor_path_falls_back_when_search_empty(monkeypatch, tmp_path):
+    monkeypatch.setattr("app.roster.generate.fetch_reddit", lambda *a, **k: [])
+    monkeypatch.setattr("app.roster.generate.fetch_web", lambda *a, **k: [])
+    roster = propose_roster(
+        _body("Always-on AI teammates"),
+        adapter=Adapter.cursor,
+        experiment_id="exp_empty",
+        root=tmp_path,
+    )
+    validate_catalogue(roster)
+    from app.store import experiment_dir
+    import json
+
+    saved = json.loads((experiment_dir("exp_empty", tmp_path) / "research.json").read_text(encoding="utf-8"))
+    assert saved["quality"] == "fallback"

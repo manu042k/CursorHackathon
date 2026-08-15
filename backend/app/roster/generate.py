@@ -7,6 +7,7 @@ from app.roster.catalogue import normalize_roster, validate_catalogue
 from app.roster.fixed_grok_bot import build_roster
 from app.roster.research.distill import distill
 from app.roster.research.filters import filter_items
+from app.roster.research.queries import build_reddit_queries, infer_category
 from app.roster.research.sources import fetch_reddit, fetch_web
 from app.store import experiment_dir, write_json
 from app import settings
@@ -21,10 +22,7 @@ BOX_ARCHETYPES = (
 
 
 def _category(body: CreateExperimentRequest) -> str:
-    text = f"{body.product_name} {body.product_description}".lower()
-    if "subscription box" in text or "snack" in text:
-        return "snacks"
-    return "saas"
+    return infer_category(body)
 
 
 def _fixture_proposal(body: CreateExperimentRequest) -> Roster:
@@ -83,10 +81,13 @@ def propose_roster(
         return roster
 
     category = _category(body)
-    items = fetch_reddit(category, [body.product_name, "price"]) + fetch_web(
-        [f"{body.product_name} pricing"]
-    )
-    kept = filter_items(items, category=category, product=body.product_name)
+    reddit_queries = build_reddit_queries(body)
+    web_queries = [
+        f"{category} pricing {body.product_name}",
+        f"switching from {category} {body.product_name}",
+    ]
+    items = fetch_reddit(category, reddit_queries) + fetch_web(web_queries, category=category)
+    kept = filter_items(items, category=category)
     if len(kept) < settings.RESEARCH_MIN_KEEP:
         roster = normalize_roster(_fixture_proposal(body))
         validate_catalogue(roster)
