@@ -3,7 +3,8 @@
 **Audience:** 4 engineers, one-day hackathon  
 **Companion docs:** [`counterfactual-replay-spec.md`](counterfactual-replay-spec.md) (product + causal contract), [`DESIGN-Guide.md`](DESIGN-Guide.md) (web UI system)  
 **Live inference:** [Cursor Python SDK](https://cursor.com/docs/sdk/python) (`cursor-sdk`) — not a direct Grok HTTP client. Spec language about Grok 4.6 is the product metaphor; this architecture binds every live decision to `AsyncAgent.prompt`.  
-**Scope:** Layer 1 only — twin-run engine, frozen artifacts, inspectable paper UI. No calibration, no experiment grid, no Shapley.
+**Scope:** Layer 1 only — twin-run engine, frozen artifacts, inspectable paper UI. No calibration, no experiment grid, no Shapley.  
+**UI status:** Planned in §10. Not implemented. Do not scaffold `web/` until that section is the build brief.
 
 This document is the build contract. If two tracks disagree, this file plus the spec win. Do not invent a second architecture during the day.
 
@@ -542,58 +543,202 @@ data: {"error":"alignment_broken"}
 
 ---
 
-## 10. Frontend architecture (Persons C and D)
+## 10. Frontend — intuitive UI plan (Persons C and D)
 
-Two routes. No auth. No dashboard chrome for its own sake. The UI *is* a paper.
+**Status: plan only. Do not scaffold `web/` until this section is agreed.** The Next.js app is not in the repo yet.
+
+Two routes. No auth. No dashboard chrome. The UI is a short paper a stranger can read.
 
 ```mermaid
 flowchart LR
-  Setup["/  Setup paper"] -->|POST /experiments| Progress["same page: progress"]
-  Progress -->|status=complete| Paper["/experiments/id  Results paper"]
+  Setup["/  Hypothesis"] -->|POST live or open fixture| Progress["same page: the fork is running"]
+  Progress -->|status=complete| Paper["/experiments/id  Finding"]
 ```
 
-### 10.1 Design mapping (mandatory)
+### 10.0 What “intuitive” means here
 
-Follow `DESIGN-Guide.md`. Map product surfaces to existing components; do not invent a “analytics dashboard” look.
+A judge who has never read the spec should, without help:
+
+| Time | They understand |
+|---|---|
+| 5s | This is an experiment, not a forecast. |
+| 20s | We will change **one** price and hold everything else. |
+| 60s | Share went down, money went up. |
+| 90s | Round 4 is where it split; these two agents caused it; here is why in their own words. |
+
+If they have to hunt a sidebar, decode a form, or click a tiny chart dot to find the story, the UI has failed.
+
+**Do not build:** a SaaS analytics dashboard, a chat with agents, a settings page with 12 fields, a spinner as the only waiting UI, or a chart that is the only way to select a round.
+
+**Do build:** a hypothesis you can read in one sentence, a finding you can read in one sentence, round buttons R1–R8, and a dark side-by-side console that opens on the round that actually moved.
+
+### 10.1 Three screens, one story
+
+#### Screen 1 — Hypothesis (`/`)
+
+The page is not “configure simulation.” It is “write the fork.”
+
+**Layout (desktop, 12-col feel, lots of white):**
+
+```
+[ black announcement: Controlled experiment — not a forecast ]
+[ Replay          Counterfactual          Open Acme paper ]
+
+Change one thing.
+See who caused the rest.
+
+  You are testing          │  Product
+  Raise Acme Analytics     │  name, one-line description
+  from $49 to $59          │  current price · competitor price
+  starting round 1.        │
+                           │  The one change
+  [ Run this experiment ]  │  type: price  delta: +20%  from round 1
+  Open the prepared paper  │
+                           │  Method (locked)
+                           │  8 rounds · seed 42 · 0 other variables
+```
+
+**Intuition rules:**
+
+1. **Plain-English preview, live.** Left column restates the form as one sentence. If they change price or delta, the sentence updates. That sentence is the product, not the inputs.
+2. **Acme is already filled.** First-run cost is one click, not a form. Empty fields are a failure.
+3. **Two doors, labeled honestly.**
+   - Primary pill: `Run this experiment` → `POST /experiments` (`adapter=cursor` when live, else explain the API is down).
+   - Secondary underline: `Open the prepared Acme paper` → `/experiments/acme-seed-42` from golden JSON. This is the demo path. Never dress fixture as live Cursor.
+4. **Method is a receipt, not disabled gray inputs.** Rounds, seed, “0 other variables” sit in the `Receipt` strip. They look intentional and locked, not broken.
+5. **Fields grouped as Product / The one change / Method.** Do not present spec §4 as a flat 11-row spreadsheet.
+6. **Only `price_change` is choosable.** Other enum values stay out of the control. One beautiful fork beats a dropdown of unfinished interventions.
+
+**Mobile:** sentence on top, form below, CTAs sticky at the bottom.
+
+#### Screen 2 — The fork is running (same `/`, swapped body)
+
+No route change. The headline becomes the live method: `Running · $49 vs $59`.
+
+```
+Run A  baseline $49     Run B  +20% → $59
+R1 ···                  R1 ···
+R2 ···                  R2 ·
+                        (fills only from SSE)
+
+Now: Run B · round 4 of 8
+share 69%   MRR $1,221
+```
+
+**Intuition rules:**
+
+- Two columns, A then B. People should see “same world, then the fork.”
+- Round ticks come from SSE `round_complete`, never from `setInterval`.
+- If the API is missing, do **not** fake ticks. Show: `API is not running. Open the prepared Acme paper.` plus the secondary link.
+- Failed runs stay here with the engine error. Never navigate to a paper of invented numbers.
+
+#### Screen 3 — Finding (`/experiments/[id]`)
+
+Read top to bottom in **demo-script order**. Default state must already show the interesting round. Do not land on a blank chart and hope they click.
+
+```
+[ announcement ]
+
+Baseline $49 vs +20% → $59
+
+Raising price 20% costs 10 points of share and still
+adds $51 MRR, because the buyers who left sat at WTP $52–$58.
+buyer_3 · R4 · B
+
+Share  −10pp     MRR  +$51     Left  4
+fell             rose          buyers
+
+Figure · Share % | MRR $          [R1 R2 R3 R4 R5 R6 R7 R8]
+two lines, marker at intervention        R4 selected
+
+This round: 62% price-sensitive churn · 38% competitor matching
+[ stacked bar for selected round, not a wall of eight unread bars ]
+
+┌ agent-console-card ──────────────────────────────────────┐
+│ Round 4 · only decisions that differed                   │
+│ buyer_3     A stay    “WTP $55, price $49…”              │
+│             B churn   “Price $7 above my WTP of $52…”    │
+│ competitor  A hold    “Share stable…”                    │
+│             B match   “Share dropping, matching $59.”    │
+└──────────────────────────────────────────────────────────┘
+
+Receipt: seed 42 · local · composer-2.5 · 0 other variables changed
+Causality is inside this frozen market, not a forecast of the real one.
+```
+
+**Intuition rules:**
+
+1. **Tension is the hero, not the chart.** Three numbers with verbs (`fell` / `rose` / `left`). Share down and MRR up must be visually opposite (danger vs success) so the paradox is obvious.
+2. **Round pills are the selector.** `R1`…`R8` under the figure, large enough to tap. Chart points also select, but pills are the obvious control. Never require hovering a 4px dot.
+3. **Land on the plot round.** On load, select the first round where `|share_a − share_b|` jumps (Acme: **R4**). Trace and attribution bind to that round immediately.
+4. **Attribution is a sentence plus one bar.** “62% of this round’s new gap is buyer churn.” A stacked bar for the *selected* round beats eight unlabeled stacked columns. Optional: a quiet row of mini-bars for all rounds, with the selected one emphasized.
+5. **Console is A over B for each agent who differed.** Same agent, two worlds, two reasons. Default filter `differed only`. `Show everyone` is an underlined secondary control, not a tab bar.
+6. **Narrative is above the fold** with citations as `buyer_3 · R4 · B`, clickable to that round.
+7. **Receipt stays on the paper**, methods at the bottom of the first viewport or a right rail on wide screens — visible in the 20s pitch, not in a footer the demo never scrolls to.
+
+### 10.2 Design mapping (mandatory)
+
+Follow `DESIGN-Guide.md`. This is an editorial experiment, not a product analytics theme.
 
 | Product surface | Design-guide component | Notes |
 |---|---|---|
-| App announcement / honesty | `announcement-bar` | Black 36px: “Controlled experiment — not a forecast” |
-| Setup headline | Hero / section display | One oversized line, tight tracking, white canvas |
-| Run CTA | `button-primary` | Near-black pill, “Run counterfactual” |
-| Secondary | `button-secondary` | Underlined “Use Acme fixture” |
-| Receipt | Hairline rules + mono labels | Seed, hashes, “0 other variables changed” — not a pretty badge soup |
-| Metric trio | Open stats on white, not shadowed cards | Share delta, MRR delta, churn — one should read as tension |
-| Twin trajectories | Figure on white; optional `dark-feature-band` behind the chart only if contrast needs it | Intervention round marked |
-| Attribution bars | Flat stacked bars, ink + deep green + coral **only** as series identity, not fills for CTAs | Coral is taxonomy-like series color, not buttons |
-| Click-through trace | `agent-console-card` | Dark panel, side-by-side A vs B reasons — this is the product shot |
-| Roster preview | `research-table` or rule-separated rows | Role, count, WTP range |
-| Footer honesty | Micro copy | Causality inside the simulation only |
+| Honesty strip | `announcement-bar` | 36px black: “Controlled experiment — not a forecast” |
+| Hypothesis headline | Product / section display | One line, tight tracking, white canvas. ~72px desktop, ~40px mobile. |
+| Run CTA | `button-primary` | Near-black pill. Label: `Run this experiment` |
+| Fixture / prepared paper | `button-secondary` | Underlined text, no fill. Never a second filled pill. |
+| Live sentence | Body large, ink | Generated from form fields; updates as they type |
+| Method lock | `Receipt` + mono labels | Seed, hashes, adapter, runtime, model, `0 other variables changed` |
+| Finding numbers | Open stats on white | No cards-with-shadows. Verbs in the label. |
+| Twin trajectories | Figure on white | Hairline grid, no tooltip shadows. Series: `Run A · $49`, `Run B · $59` |
+| Round selector | Outlined pills / `button-pill-outline` | R1–R8. Selected = filled near-black or hairline+ink, not coral fill. |
+| Attribution | One stacked bar + caption | Coral only as a *series* color for a band, never as the CTA. |
+| Reasons | `agent-console-card` | Dark panel, this is the product shot. |
+| Roster | `research-table` | Rule-separated rows, not a card grid. |
+| Footer honesty | Micro copy | Inside this simulation only. |
 
-Tokens: implement `web/src/styles/tokens.css` from the guide (`--color-canvas`, `--color-primary`, `--color-deep-green`, `--radius-pill`, type steps). Space Grotesk + Inter fallbacks if Cohere fonts are unavailable.
+Tokens: `web/src/styles/tokens.css` from the guide. Fonts: Space Grotesk (display fallback), Inter (body), IBM Plex Mono (labels). No Geist, no default Next.js dark theme, no `prefers-color-scheme` invert to gray.
 
-### 10.2 Person C — Setup & shell
+### 10.3 Interaction spec
 
-**Owns:** `layout.tsx`, tokens, nav, `/` page, progress, receipt component (also used on results), API client skeleton.
+| Action | Result |
+|---|---|
+| Load `/` | Acme prefilled; left sentence reads the +20% fork; focus on primary CTA |
+| Edit price or delta | Sentence and receipt prices update immediately |
+| `Open the prepared Acme paper` | Client-side golden paper; receipt `adapter: fixture` |
+| `Run this experiment` with API up | Body swaps to Screen 2; SSE ticks; on `complete` go to `/experiments/{id}` |
+| `Run this experiment` with API down | Inline error + the fixture link. No fake rounds. |
+| Load `/experiments/acme-seed-42` | Paper with R4 selected, trace open on differed agents |
+| Click `R4` or a chart point | Chart marker, attribution sentence, and console all bind to that round |
+| Click a citation `buyer_3 · R4 · B` | Selects R4 and scrolls the console row into view |
+| `Show everyone` | Console lists stay/hold agents too; primary remains differed |
+| Toggle Share / MRR | Same selected round; y-axis and series swap |
 
-Setup fields (spec §4) — keep the form editorial, two-column on desktop, stacking on mobile. Prefill Acme. `rounds` and `seed` visible but locked (disabled inputs) so the method is visible.
+Keyboard: Left/Right changes round. Enter on a citation activates it. Focus rings use `--color-focus-blue`.
 
-Progress: subscribe to SSE; show run id, round, “Run A” then “Run B”. Do not fake a determinate bar from wall clock.
+### 10.4 Empty, loading, failed
 
-### 10.3 Person D — Results paper
+| State | UI |
+|---|---|
+| Loading paper | Hairline skeleton of header + three numbers + chart frame. No bouncing spinner as the page. |
+| Unknown id | “No experiment with this id.” Link home. No Acme numbers. |
+| `status=failed` | Engine error string on Screen 2 or paper header. Receipt still shown if hashes exist. |
+| Fixture | Banner/receipt: `adapter: fixture`. Do not say Cursor ran this. |
+| Live Cursor | Receipt: `adapter: cursor`, `runtime: local`, model id. |
 
-**Owns:** `/experiments/[id]`, metric row, line chart, stacked attribution, trace drawer.
+### 10.5 Ownership when we build (not now)
 
-Build against the **golden** `GET` payload (or a mocked `contracts.ts` fixture) from hour one. Chart library: Recharts or Chart.js — pick one in the first 45 min (recommendation: **Recharts**, works cleanly in React). No shadows on tooltips; hairline grid; two series named “Run A · $49” and “Run B · $59”.
+- **C** — `layout`, tokens, nav, announcement, `Button`, `Receipt`, `/` hypothesis + running states, `lib/api.ts`
+- **D** — `/experiments/[id]`, `MetricRow`, `TwinChart`, round pills, `AttributionBars`, `TracePanel`
+- Golden `ExperimentPaper` JSON is D’s day-one input (from B / US-X2). D never waits on Cursor.
+- Chart: Recharts **or** a small SVG. If Recharts, strip default shadows and rounded blobs so it still looks like the guide.
 
-Click round → `agent-console-card` lists only agents whose decisions **differed**, A | B, with full `reason` strings. Toggle “show all agents” as secondary.
-
-### 10.4 Shared frontend rules
+### 10.6 Shared frontend rules
 
 - Person C owns `components/Button`, `Receipt`, `AnnouncementBar`, `tokens.css`.
-- Person D owns `TwinChart`, `AttributionBars`, `TracePanel`, `MetricRow`.
+- Person D owns `TwinChart`, `RoundPills`, `AttributionBars`, `TracePanel`, `MetricRow`.
 - Neither edits the other’s files after the 45-min contract freeze without a ping.
-- `lib/api.ts` is C’s to start; D may add `getExperiment(id)` if C has not, but types stay in `types/contracts.ts`.
+- `lib/api.ts` is C’s to start; D may add `getExperiment(id)` if C has not; types stay in `types/contracts.ts`.
+- Build order when unblocked: tokens + `/` sentence + golden paper with R4 open. Live POST is last.
 
 ---
 
@@ -926,16 +1071,19 @@ Acceptance:
 #### US-C2 · P0 · 2h — Setup paper (`/`)
 
 **As** a strategy user  
-**I want** to enter product + one intervention (prefilled Acme)  
-**So that** I can start a twin-run without knowing the engine.
+**I want** to read the fork in one sentence and run it with Acme already filled  
+**So that** I do not have to understand the engine to start.
 
 Acceptance:
 
-- [ ] All spec §4 fields present; rounds and seed visible but disabled
+- [ ] Left/top live sentence: “Raise {product} from ${price} to ${forked} starting round {n}.” Updates as fields change
+- [ ] Fields grouped: Product / The one change / Method — not a flat 11-row form
 - [ ] Prefill Acme Analytics / $49 / +20% / seed 42
-- [ ] Secondary action “Load Acme fixture” (adapter=fixture)
-- [ ] Primary “Run counterfactual” POSTs `CreateExperimentRequest`
-- [ ] Client-side validation before POST
+- [ ] Method (rounds, seed, 0 other variables) is the Receipt strip, not gray disabled inputs
+- [ ] Only `price_change` is offered
+- [ ] Primary pill: `Run this experiment` POSTs `CreateExperimentRequest`
+- [ ] Secondary underline: `Open the prepared Acme paper` → golden `/experiments/acme-seed-42`
+- [ ] If API is down on Run: inline error + fixture link; no fake round ticks
 
 #### US-C3 · P0 · 1.5h — Receipt component
 
@@ -958,9 +1106,10 @@ Acceptance:
 Acceptance:
 
 - [ ] Subscribes to `/events` after 202
-- [ ] Displays `Run B · round 4 / 8`
+- [ ] Displays `Run B · round 4 / 8` and two columns (A filling, then B)
 - [ ] On `complete`, navigates to `/experiments/{id}`
 - [ ] On `failed`, shows the error string; does not route to a fake paper
+- [ ] Ticks only from SSE — never `setInterval`
 
 #### US-C5 · P1 · 1h — Roster preview
 
@@ -992,8 +1141,9 @@ Acceptance:
 Acceptance:
 
 - [ ] Header uses experiment prices, not hardcoded copy only (hardcode OK until API binds)
-- [ ] Cards: share delta (pp), MRR delta ($), churn count
-- [ ] For golden Acme, share is down and MRR is up — visual tension
+- [ ] Three numbers with verbs: share **fell** Xpp, MRR **rose** $Y, Z buyers **left**
+- [ ] For golden Acme, share is down and MRR is up — opposite tones (danger vs success)
+- [ ] Narrative sits above the numbers
 - [ ] Embeds C’s `Receipt` once it exists; stub props until then
 
 #### US-D2 · P0 · 2h — Twin trajectory chart
@@ -1007,7 +1157,9 @@ Acceptance:
 - [ ] X = R1…R8, toggle Share (%) vs MRR ($)
 - [ ] Series names: `Run A · $49`, `Run B · $59` (from payload)
 - [ ] Marker at `applies_from_round`
-- [ ] Click a round (point or axis) selects it for the trace
+- [ ] **Round pills** R1–R8 are the primary selector (chart points also select)
+- [ ] On load, select the first major divergence round (golden Acme: **R4**)
+- [ ] Left/Right keys move the selected round
 - [ ] No drop shadows; hairline axes; legend present
 - [ ] Renders from golden JSON with no backend up
 
@@ -1019,7 +1171,8 @@ Acceptance:
 
 Acceptance:
 
-- [ ] Stacked 100% bars for rounds with contributors
+- [ ] Caption for the **selected** round: “62% of this round’s new gap is …”
+- [ ] One stacked bar for the selected round (required); optional quiet mini-bars for others
 - [ ] Legend uses agent bands (price-sensitive, competitor, loyal)
 - [ ] Values from `divergence_by_round`, not invented
 - [ ] Empty contributor rounds render as empty / skipped, not fake 33/33/33
@@ -1032,11 +1185,12 @@ Acceptance:
 
 Acceptance:
 
-- [ ] Default filter: agents whose `decision` differs
+- [ ] Default filter: agents whose `decision` differs; A stacked over B per agent
 - [ ] Full `reason` strings, no truncation mid-sentence (scroll OK)
 - [ ] Styled as `agent-console-card` (dark, product mockup cadence)
-- [ ] Selecting R4 on the chart opens buyer_3 vs competitor for golden data
-- [ ] Secondary control: show all agents
+- [ ] Golden load opens R4 with buyer_3 vs competitor already visible
+- [ ] Secondary underline: `Show everyone`
+- [ ] Citation clicks (`buyer_3 · R4 · B`) select that round and scroll the row
 
 #### US-D5 · P0 · 0.5h — Grounded summary block
 

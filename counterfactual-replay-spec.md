@@ -278,6 +278,8 @@ The sentence the dashboard should write for the worked example:
 
 Read top to bottom like a paper. The chart is the figure. The trace is the appendix. The receipt is the methods section, kept on the first page on purpose.
 
+**Build this as specified in [`architecture.md`](architecture.md) §10** (hypothesis sentence, round pills, land on R4, A-over-B console). Do not start from a generic dashboard.
+
 | Surface | Job | Priority |
 |---|---|---|
 | Two-scenario header + receipt | Name the fork. Prove nothing else changed. Prompt hash, seed, roster hash visible. | **P0 — rhetorical spine** |
