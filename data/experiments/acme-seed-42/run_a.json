@@ -1,0 +1,494 @@
+{
+  "trajectory": [
+    {
+      "round": 1,
+      "share": 80,
+      "mrr": 1176
+    },
+    {
+      "round": 2,
+      "share": 80,
+      "mrr": 1176
+    },
+    {
+      "round": 3,
+      "share": 79,
+      "mrr": 1161
+    },
+    {
+      "round": 4,
+      "share": 78,
+      "mrr": 1147
+    },
+    {
+      "round": 5,
+      "share": 77,
+      "mrr": 1132
+    },
+    {
+      "round": 6,
+      "share": 76,
+      "mrr": 1117
+    },
+    {
+      "round": 7,
+      "share": 76,
+      "mrr": 1117
+    },
+    {
+      "round": 8,
+      "share": 76,
+      "mrr": 1117
+    }
+  ],
+  "agent_logs": [
+    {
+      "round": 1,
+      "agent_id": "buyer_1",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $7 over my willingness to pay of $42, but loyalty 0.15 keeps me subscribed this round.",
+      "confidence": 0.7
+    },
+    {
+      "round": 1,
+      "agent_id": "buyer_2",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $3 under my willingness to pay of $52; loyalty 0.3. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 1,
+      "agent_id": "buyer_3",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $6 under my willingness to pay of $55; loyalty 0.35. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 1,
+      "agent_id": "buyer_4",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $13 under my willingness to pay of $62; loyalty 0.7. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 1,
+      "agent_id": "buyer_5",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $23 under my willingness to pay of $72; loyalty 0.85. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 1,
+      "agent_id": "competitor",
+      "run_id": "A",
+      "decision": "hold",
+      "reason": "Your share is 80% at $49; I hold competitor price at $45.",
+      "confidence": 0.75
+    },
+    {
+      "round": 1,
+      "agent_id": "analyst",
+      "run_id": "A",
+      "decision": "note",
+      "reason": "Run A round 1: market share 80%.",
+      "confidence": 0.9
+    },
+    {
+      "round": 2,
+      "agent_id": "buyer_1",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $7 over my willingness to pay of $42, but loyalty 0.15 keeps me subscribed this round.",
+      "confidence": 0.7
+    },
+    {
+      "round": 2,
+      "agent_id": "buyer_2",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $3 under my willingness to pay of $52; loyalty 0.3. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 2,
+      "agent_id": "buyer_3",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $6 under my willingness to pay of $55; loyalty 0.35. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 2,
+      "agent_id": "buyer_4",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $13 under my willingness to pay of $62; loyalty 0.7. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 2,
+      "agent_id": "buyer_5",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $23 under my willingness to pay of $72; loyalty 0.85. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 2,
+      "agent_id": "competitor",
+      "run_id": "A",
+      "decision": "hold",
+      "reason": "Your share is 80% at $49; I hold competitor price at $45.",
+      "confidence": 0.75
+    },
+    {
+      "round": 2,
+      "agent_id": "analyst",
+      "run_id": "A",
+      "decision": "note",
+      "reason": "Run A round 2: market share 80%.",
+      "confidence": 0.9
+    },
+    {
+      "round": 3,
+      "agent_id": "buyer_1",
+      "run_id": "A",
+      "decision": "churn",
+      "reason": "Price now $49 is $7 above my willingness to pay of $42; competitor is $45. I leave.",
+      "confidence": 0.82
+    },
+    {
+      "round": 3,
+      "agent_id": "buyer_2",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $3 under my willingness to pay of $52; loyalty 0.3. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 3,
+      "agent_id": "buyer_3",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $6 under my willingness to pay of $55; loyalty 0.35. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 3,
+      "agent_id": "buyer_4",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $13 under my willingness to pay of $62; loyalty 0.7. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 3,
+      "agent_id": "buyer_5",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $23 under my willingness to pay of $72; loyalty 0.85. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 3,
+      "agent_id": "competitor",
+      "run_id": "A",
+      "decision": "hold",
+      "reason": "Your share is 79% at $49; I hold competitor price at $45.",
+      "confidence": 0.75
+    },
+    {
+      "round": 3,
+      "agent_id": "analyst",
+      "run_id": "A",
+      "decision": "note",
+      "reason": "Run A round 3: market share 79%.",
+      "confidence": 0.9
+    },
+    {
+      "round": 4,
+      "agent_id": "buyer_1",
+      "run_id": "A",
+      "decision": "churn",
+      "reason": "Price now $49 is $7 above my willingness to pay of $42; competitor is $45. I leave.",
+      "confidence": 0.82
+    },
+    {
+      "round": 4,
+      "agent_id": "buyer_2",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $3 under my willingness to pay of $52; loyalty 0.3. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 4,
+      "agent_id": "buyer_3",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $6 under my willingness to pay of $55; loyalty 0.35. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 4,
+      "agent_id": "buyer_4",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $13 under my willingness to pay of $62; loyalty 0.7. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 4,
+      "agent_id": "buyer_5",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $23 under my willingness to pay of $72; loyalty 0.85. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 4,
+      "agent_id": "competitor",
+      "run_id": "A",
+      "decision": "hold",
+      "reason": "Your share is 78% at $49; I hold competitor price at $45.",
+      "confidence": 0.75
+    },
+    {
+      "round": 4,
+      "agent_id": "analyst",
+      "run_id": "A",
+      "decision": "note",
+      "reason": "Run A round 4: market share 78%.",
+      "confidence": 0.9
+    },
+    {
+      "round": 5,
+      "agent_id": "buyer_1",
+      "run_id": "A",
+      "decision": "churn",
+      "reason": "Price now $49 is $7 above my willingness to pay of $42; competitor is $45. I leave.",
+      "confidence": 0.82
+    },
+    {
+      "round": 5,
+      "agent_id": "buyer_2",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $3 under my willingness to pay of $52; loyalty 0.3. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 5,
+      "agent_id": "buyer_3",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $6 under my willingness to pay of $55; loyalty 0.35. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 5,
+      "agent_id": "buyer_4",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $13 under my willingness to pay of $62; loyalty 0.7. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 5,
+      "agent_id": "buyer_5",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $23 under my willingness to pay of $72; loyalty 0.85. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 5,
+      "agent_id": "competitor",
+      "run_id": "A",
+      "decision": "hold",
+      "reason": "Your share is 77% at $49; I hold competitor price at $45.",
+      "confidence": 0.75
+    },
+    {
+      "round": 5,
+      "agent_id": "analyst",
+      "run_id": "A",
+      "decision": "note",
+      "reason": "Run A round 5: market share 77%.",
+      "confidence": 0.9
+    },
+    {
+      "round": 6,
+      "agent_id": "buyer_1",
+      "run_id": "A",
+      "decision": "churn",
+      "reason": "Price now $49 is $7 above my willingness to pay of $42; competitor is $45. I leave.",
+      "confidence": 0.82
+    },
+    {
+      "round": 6,
+      "agent_id": "buyer_2",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $3 under my willingness to pay of $52; loyalty 0.3. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 6,
+      "agent_id": "buyer_3",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $6 under my willingness to pay of $55; loyalty 0.35. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 6,
+      "agent_id": "buyer_4",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $13 under my willingness to pay of $62; loyalty 0.7. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 6,
+      "agent_id": "buyer_5",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $23 under my willingness to pay of $72; loyalty 0.85. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 6,
+      "agent_id": "competitor",
+      "run_id": "A",
+      "decision": "hold",
+      "reason": "Your share is 76% at $49; I hold competitor price at $45.",
+      "confidence": 0.75
+    },
+    {
+      "round": 6,
+      "agent_id": "analyst",
+      "run_id": "A",
+      "decision": "note",
+      "reason": "Run A round 6: market share 76%.",
+      "confidence": 0.9
+    },
+    {
+      "round": 7,
+      "agent_id": "buyer_1",
+      "run_id": "A",
+      "decision": "churn",
+      "reason": "Price now $49 is $7 above my willingness to pay of $42; competitor is $45. I leave.",
+      "confidence": 0.82
+    },
+    {
+      "round": 7,
+      "agent_id": "buyer_2",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $3 under my willingness to pay of $52; loyalty 0.3. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 7,
+      "agent_id": "buyer_3",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $6 under my willingness to pay of $55; loyalty 0.35. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 7,
+      "agent_id": "buyer_4",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $13 under my willingness to pay of $62; loyalty 0.7. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 7,
+      "agent_id": "buyer_5",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $23 under my willingness to pay of $72; loyalty 0.85. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 7,
+      "agent_id": "competitor",
+      "run_id": "A",
+      "decision": "hold",
+      "reason": "Your share is 76% at $49; I hold competitor price at $45.",
+      "confidence": 0.75
+    },
+    {
+      "round": 7,
+      "agent_id": "analyst",
+      "run_id": "A",
+      "decision": "note",
+      "reason": "Run A round 7: market share 76%.",
+      "confidence": 0.9
+    },
+    {
+      "round": 8,
+      "agent_id": "buyer_1",
+      "run_id": "A",
+      "decision": "churn",
+      "reason": "Price now $49 is $7 above my willingness to pay of $42; competitor is $45. I leave.",
+      "confidence": 0.82
+    },
+    {
+      "round": 8,
+      "agent_id": "buyer_2",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $3 under my willingness to pay of $52; loyalty 0.3. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 8,
+      "agent_id": "buyer_3",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $6 under my willingness to pay of $55; loyalty 0.35. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 8,
+      "agent_id": "buyer_4",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $13 under my willingness to pay of $62; loyalty 0.7. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 8,
+      "agent_id": "buyer_5",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $49 is $23 under my willingness to pay of $72; loyalty 0.85. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 8,
+      "agent_id": "competitor",
+      "run_id": "A",
+      "decision": "hold",
+      "reason": "Your share is 76% at $49; I hold competitor price at $45.",
+      "confidence": 0.75
+    },
+    {
+      "round": 8,
+      "agent_id": "analyst",
+      "run_id": "A",
+      "decision": "note",
+      "reason": "Run A round 8: market share 76%.",
+      "confidence": 0.9
+    }
+  ]
+}
