@@ -16,6 +16,7 @@ const checks = [
   [form.includes("Product"), "Product group"],
   [form.includes("The one change"), "The one change group"],
   [form.includes("Method"), "Method strip"],
+  [form.includes('name="rounds"'), "US-C8: Method strip must expose a rounds input"],
   [form.includes("price_change"), "only price_change"],
   [!form.includes("marketing_spend"), "no unfinished interventions"],
   [form.includes("Run this experiment"), "primary CTA"],
