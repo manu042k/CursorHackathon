@@ -84,7 +84,7 @@ A single web app (Next.js + FastAPI backend) with:
 - Rounds tunable **3–8**, default **4**. Grok Bot fixture paper stays 8.
 - 1 variable changed between runs. Never more than one — this is the whole point.
 - 1 real-ish product/market seed, prepared in advance (don't improvise it live).
-- Token caps on every agent call. No live social fetch during rounds.
+- Token caps on every agent call. No live social fetch during rounds. Research sources: Reddit + web search with ADR-12 filters only.
 
 ### 3.1 Must-ship vs skip without guilt
 
@@ -145,11 +145,13 @@ Background research agents, given `product_name` + `product_description` + price
 - **1 competitor**
 - **1 analyst** (meta, weight 0)
 
-Each buyer carries a **reaction playbook**: how someone in that category on social media would react to a price hike, a cheaper competitor, a feature cut — mapped onto `stay` / `churn` / `switch`. Evidence is a short paraphrase, not a live feed.
+Each buyer carries a **reaction playbook** and a frozen **`ArchetypeProfile`** (mindset, social voice, values, ignores, behavior on price hike / cheaper competitor / feature cut). See [`architecture.md`](architecture.md) §6.1.1. The label (`price_sensitive`, …) is only the key. Research may assign which profile an instance gets and add paraphrased `evidence`; it must not author a new mindset from raw Reddit.
+
+**Sources:** Reddit and web search **only**, once, before confirm. See [`architecture.md`](architecture.md) ADR-12. Do not use X, TikTok, or Facebook. Hard-filter for recency, score, category+decision relevance, and caps; distill to playbooks. If too little clean evidence remains, fall back to fixture playbooks rather than letting memes and pile-ons set WTP/churn behavior. Raw threads never enter round prompts.
 
 The owner **confirms** the roster. Then it is hashed and fed identically into Run A and Run B.
 
-**Determinism requirement (critical):** research is seeded and run once. Breaking generate-once / freeze / reuse breaks the causal claim in §6.1. Do not fetch social networks during rounds.
+**Determinism requirement (critical):** research is seeded and run once. Store filtered source ids plus the distilled roster. Breaking generate-once / freeze / reuse breaks the causal claim in §6.1. Do not fetch Reddit or the web during rounds.
 
 Within each archetype, individual trait values (exact WTP, loyalty) are sampled with the locked seed — same two-step pattern: generate once, freeze, reuse.
 
@@ -181,6 +183,18 @@ Spread willingness-to-pay so $144 sits **inside** the distribution, not above al
     "price_sensitivity": "high",
     "wtp_gap": 16,
     "voice": "complains in public, compares screenshots, leaves fast",
+    "profile": {
+      "id": "price_sensitive",
+      "one_liner": "Leaves when price crosses what the job is worth; treats hikes as bait-and-switch.",
+      "mindset": "This buyer treats the product as a line item, not an identity. They keep a running comparison of “what I pay” vs “what I actually use this month.” A price increase is not a signal of quality; it is a prompt to reopen the make-vs-buy decision. They assume vendors will keep pushing price if nobody leaves, so staying quiet feels like consent. Loyalty programs, founder stories, and “we’re investing in the platform” barely register. They will tolerate rough UX if the cheaper option is close enough on the job-to-be-done. They decide quickly, often the same week as an invoice change, and they prefer a visible alternative already sitting in another tab. They are not trying to punish the vendor; they are trying not to feel stupid for overpaying. If the hike still sits under their willingness to pay and no cheaper close substitute exists, they stay — grudgingly. The moment a competitor is obviously cheaper for the same job, they switch and will say so in public with screenshots of the two invoices.",
+      "social_voice": "Public, concrete, screenshot-heavy. Talks in dollars, seats, and “not worth it anymore.” Compares two tabs. Rarely writes long strategy posts.",
+      "behavior": {
+        "price_hike": "churn or switch if over WTP",
+        "competitor_cheaper": "switch if the gap is obvious",
+        "feature_cut": "churn threat in public",
+        "status_quo": "stay while price ≤ WTP"
+      }
+    },
     "reaction_playbook": {
       "price_hike": "switch_if_above_wtp",
       "competitor_cheaper": "amplify_and_switch"

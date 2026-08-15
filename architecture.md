@@ -154,23 +154,61 @@ Docs: [Cursor Python SDK](https://cursor.com/docs/sdk/python).
 
 **Why:** Personas must react like users of that **category** on social media (public complaint vs quiet renewal vs competitor quote-tweet). That evidence belongs in a frozen **reaction playbook**, not in a live feed the agent scrolls during rounds. Live fetch during the 8 (or 4) rounds would add extra variables and void the causal claim.
 
-**Must not:** clone a real person’s account; scrape during Run A/B; invent a new decision verb per tweet. Map clusters onto the closed archetype catalogue. Distinctive quotes live in `traits.evidence`.
+**Sources (US-A8):** Reddit + web search only, and **only during the research pass**. Market-decision agents keep `tools=[]`.
+
+**Must not:** clone a real person’s account; scrape X/TikTok/Facebook; scrape during Run A/B; invent a new decision verb per post; dump raw threads into round prompts. Map clusters onto the closed archetype catalogue. Distinctive quotes live in `traits.evidence` as **paraphrase**, max 2 short lines per buyer.
+
+### ADR-12 — Clean research inputs (Reddit + web search)
+
+**Decision:** Research may query Reddit and the public web, then a **filter → distill** step must run before any persona trait is written. Noisy or off-category material is dropped. If too little clean evidence remains, fall back to the fixture catalogue playbooks rather than letting junk shape behavior.
+
+**Why:** Unfiltered Reddit and search results are memes, pile-ons, bots, and off-topic rage. That entropy would leak into `stay`/`churn`/`switch` and break the “these agents are this category” claim.
+
+**Allow**
+
+| Source | What to query | Keep |
+|---|---|---|
+| Reddit | Category subreddits inferred from the product (e.g. SaaS → `r/saas`, `r/sysadmin`; never `r/all` / meme defaults) | Posts/comments about **price, switching, competitors, renewals, feature cuts** in that category |
+| Web search | `{category} pricing`, `switching from {category}`, competitor comparison, review aggregators, vendor docs | Pages that discuss the same decision types |
+
+**Drop before distill (hard filters)**
+
+- Outside a **18-month** recency window (configurable `RESEARCH_MAX_AGE_DAYS`, default 540)
+- Reddit score `< RESEARCH_MIN_SCORE` (default **10**) or comment count `< RESEARCH_MIN_COMMENTS` (default **3**)
+- Removed, NSFW, stickied, or automod-only threads
+- Queries that do not include the **product category** (not only the brand name — brand-only pile-ons are too noisy)
+- Items that fail a relevance gate: must mention the category **and** at least one of `{price, plan, churn, switch, competitor, renew, contract, seat}`
+- Joke/meme-only, conspiracy, or slur-bearing text (blocklist)
+- Duplicate URLs / near-duplicate titles
+- Cap: **8 Reddit items + 8 web items** after filters (`RESEARCH_MAX_ITEMS_PER_SOURCE = 8`)
+
+**Distill (required)**
+
+1. Summarize kept items into category **patterns**, not named users.
+2. Map each pattern onto an **existing** catalogue `archetype` (lookup `ArchetypeProfile`). Do **not** rewrite `mindset` or `behavior`.
+3. Write `traits.evidence` as 1–2 paraphrases. **Raw post bodies never enter `AgentDecisionRequest`.**
+4. If kept items `< RESEARCH_MIN_KEEP` (default **4**), do not invent playbooks from scraps — use `fixed_grok_bot` (or catalogue defaults) and label the roster `research_quality: "fallback"`.
+
+**Determinism:** run research once; store the **filtered item ids/urls + distilled roster** as artifacts (`research.json` + `roster.json`). Both twin runs reuse that freeze. Do not re-query Reddit or search between A and B.
 
 ### ADR-9 — Class + archetype + instance; no business agent
 
-**Decision:** Three layers on every roster agent:
+**Decision:** Four layers on every roster agent:
 
 | Layer | Closed or open | What it controls |
 |---|---|---|
 | `class` | Closed: `buyer` \| `competitor` \| `analyst` | Decision verbs and apply order |
-| `archetype` | Closed small enum | Chart bands and playbooks |
-| Instance | Open | WTP, loyalty, voice, frozen evidence |
+| `archetype` | Closed small enum (the **label**) | Chart bands; lookup key |
+| `profile` | Closed, authored in `catalogue.py` / `profiles.py` | Generalized **mindset + behavior** for that label — the same text for every experiment |
+| Instance | Open | WTP, loyalty, frozen `evidence` paraphrases from research |
 
-Buyer archetypes: `price_sensitive`, `loyalist`, `value_seeker`, `enterprise`, `churn_risk`. Competitor: `incumbent` (default), later `discounter` / `premium_entrant`. Analyst has no archetype that moves the market.
+Buyer archetype labels: `price_sensitive`, `loyalist`, `value_seeker`, `enterprise`, `churn_risk`. Competitor: `incumbent` (default). Analyst: `meta` (does not move the market).
+
+Each label **must** resolve to a full `ArchetypeProfile` (see §6.1.1). The label alone is not enough to prompt an agent. Research **must not** rewrite `mindset` or `behavior_*` — it only maps a person onto a label and may add `evidence`. That is how ADR-12 junk stays out of psychology.
 
 **No `business` class.** The platform user *is* the business owner.
 
-Do not let research invent new classes. `role` may remain a display string (`price_sensitive_buyer`) derived from class+archetype so existing papers still load.
+Do not let research invent new classes or new profiles. `role` may remain a display string (`price_sensitive_buyer`) derived from class+archetype so existing papers still load.
 
 ### ADR-10 — Parallel users, then competitor on S1
 
@@ -256,7 +294,7 @@ flowchart TB
 | Module | Responsibility | Must not do |
 |---|---|---|
 | `setup` | Validate input, lock seed, append `experiment.created`, export `experiment.json` | Start the twin run; call Cursor for market decisions |
-| `research` | One-shot (or small fan-out) category research → proposed 5+1+1 roster + playbooks | Run during A/B; invent new classes; dump raw social corpora into round prompts |
+| `research` | Reddit + web search once → filter → distill → proposed 5+1+1 roster + playbooks | Run during A/B; invent new classes; dump raw threads into round prompts; use X/TikTok; skip the hygiene filters |
 | `roster` | Freeze confirmed roster; append `roster.frozen` | Differ between run A and run B |
 | `agents` | One decision per agent per round, schema-valid JSON, token-capped | Mutate market state; recompute share/MRR |
 | `twin_runner` | Apply intervention only to B from `applies_from_round`; N rounds × 2; parallel buyers then competitor on S1; emit events | Invent attribution text |
@@ -291,7 +329,8 @@ Frontend modules (Next.js) are pages + design-system components, not a second do
 │   │   ├── roster/
 │   │   │   ├── fixed_grok_bot.py    # P0 fixture
 │   │   │   ├── generate.py          # US-A8 research → proposed roster
-│   │   │   └── catalogue.py         # class + archetype enums (US-A7)
+│   │   │   ├── catalogue.py         # class + archetype enums (US-A7)
+│   │   │   └── research/            # Reddit + web search, filter, distill (ADR-12)
 │   │   ├── agents/
 │   │   │   ├── port.py              # DecisionPort
 │   │   │   ├── cursor_adapter.py    # CursorSdkAdapter (AsyncAgent.prompt)
@@ -355,15 +394,116 @@ Frontend modules (Next.js) are pages + design-system components, not a second do
 
 **No business class.**
 
-**Buyer archetypes** (closed; chart bands): `price_sensitive`, `loyalist`, `value_seeker`, `enterprise`, `churn_risk`.
+**Buyer archetype labels** (closed; chart bands): `price_sensitive`, `loyalist`, `value_seeker`, `enterprise`, `churn_risk`.
 
-Each buyer instance carries a frozen **reaction playbook** (how that category talks and acts on a price hike, a cheaper competitor, a feature cut) plus optional `evidence` strings distilled from category social patterns. Reasons must sound like that category, not like an economist in an experiment. Decision verbs stay the closed enum — a social pile-on maps to `churn` / `switch` / `stay`, it does not create a `tweet` action.
+Each label is a key into a frozen **`ArchetypeProfile`** (§6.1.1): mindset, social voice, what they value/ignore, and how they behave on a price hike / cheaper competitor / feature cut / status quo. Instance fields (WTP, loyalty, `evidence`) sit **on top of** that profile. They do not replace it.
+
+Reasons must sound like that profile, not like an economist in an experiment. Decision verbs stay the closed enum — a social pile-on maps to `churn` / `switch` / `stay`, it does not create a `tweet` action.
 
 **Market size vs instantiated callers:** 30 addressable buyers. Instantiate **5** weighted Cursor buyer agents. Do not spawn 30 live prompts.
 
 WTP must straddle the forked price (Grok Bot: $144). At least two buyers sit in `$120–$144`. That band *is* the plot.
 
 Fixture `fixed_grok_bot.py` maps onto this catalogue (price-sensitive vs enterprise/loyalist). Display `role` strings may stay for golden JSON compatibility.
+
+### 6.1.1 Archetype profiles (mindset + behavior)
+
+Closed catalogue. Same JSON for every product. Research may choose **which** profile an instance uses; it may not author a new mindset.
+
+```python
+class ArchetypeProfile(FrozenModel):
+    id: str                    # matches RosterAgent.archetype
+    one_liner: str             # UI table
+    mindset: str               # 150–250 words: how this category thinks
+    social_voice: str          # how they talk in category forums
+    values: list[str]          # what they optimize
+    ignores: list[str]         # what they discount
+    switching_friction: Literal["low", "medium", "high"]
+    publicness: Literal["loud", "quiet", "mixed"]
+    behavior: dict[str, str]   # keys: price_hike, competitor_cheaper, feature_cut, status_quo
+    default_playbook: dict[str, str]  # maps those keys to stay|churn|switch|hold|match|undercut
+```
+
+`prompt_block(profile)` is the exact text copied into `AgentDecisionRequest.persona["profile"]` every round (byte-identical on A and B).
+
+**`price_sensitive`**
+
+- **One-liner:** Leaves when price crosses what the job is worth; treats hikes as bait-and-switch.
+- **Mindset:** This buyer treats the product as a line item, not an identity. They keep a running comparison of “what I pay” vs “what I actually use this month.” A price increase is not a signal of quality; it is a prompt to reopen the make-vs-buy decision. They assume vendors will keep pushing price if nobody leaves, so staying quiet feels like consent. Loyalty programs, founder stories, and “we’re investing in the platform” barely register. They will tolerate rough UX if the cheaper option is close enough on the job-to-be-done. They decide quickly, often the same week as an invoice change, and they prefer a visible alternative already sitting in another tab. They are not trying to punish the vendor; they are trying not to feel stupid for overpaying. If the hike still sits under their willingness to pay and no cheaper close substitute exists, they stay — grudgingly. The moment a competitor is obviously cheaper for the same job, they switch and will say so in public with screenshots of the two invoices.
+- **Social voice:** Public, concrete, screenshot-heavy. Talks in dollars, seats, and “not worth it anymore.” Compares two tabs. Rarely writes long strategy posts.
+- **Values:** Low total cost, an easy out, a visible cheaper alternative.
+- **Ignores:** Roadmap promises, brand prestige, “we’re investing in the platform.”
+- **Friction / publicness:** low / loud
+- **Behavior:** `price_hike` → churn or switch if over WTP; `competitor_cheaper` → switch if the gap is obvious; `feature_cut` → churn threat in public; `status_quo` → stay while price ≤ WTP.
+- **Playbook:** `price_hike: switch_if_above_wtp`, `competitor_cheaper: amplify_and_switch`, `feature_cut: public_churn_threat`, `status_quo: stay`.
+
+**`loyalist`**
+
+- **One-liner:** Stays through a hike if the product still does the job they already trust.
+- **Mindset:** Switching cost is mostly emotional and operational: workflows, muscle memory, “we already trained the team.” They interpret a price increase as inflation or a premium they might owe if the product has been reliable. They want to believe the vendor. They will wait a round or two before acting, looking for a reason to stay — a roadmap note, a feature they still use daily, a support person who remembers them. They dislike public pile-ons and will sometimes defend the product in comments even when they privately wince at the new price. They churn only after a broken promise (outage, removed feature they depend on) or a hike that feels extractive relative to their willingness to pay. Small competitor discounts do not move them; re-training does. They are the segment that makes “share down, MRR up” possible, because they keep paying while price-sensitive neighbors leave. Give them continuity and they stay; surprise them with extraction and the patience runs out.
+- **Social voice:** Defensive or quiet. “They’ve earned this.” Short, less numeric than price-sensitive buyers.
+- **Values:** Continuity, trust, not re-training.
+- **Ignores:** Small competitor discounts, launch-week outrage threads.
+- **Friction / publicness:** high / quiet
+- **Behavior:** `price_hike` → stay unless far above WTP; `competitor_cheaper` → stay; `feature_cut` → stay and wait; `status_quo` → stay.
+- **Playbook:** `price_hike: stay_unless_far_over_wtp`, `competitor_cheaper: ignore`, `feature_cut: give_a_chance`, `status_quo: stay`.
+
+**`value_seeker`**
+
+- **One-liner:** Re-shops every round: yours vs competitor on price *and* what they get.
+- **Mindset:** Neither cheap nor loyal by default. They keep a mental scorecard: features they actually use, list price, competitor price, and “am I still getting a fair deal.” A hike is acceptable if the product pulled ahead on the jobs they care about; it is not acceptable if the competitor now looks equivalent and cheaper. They will switch without drama if the scorecard flips — no manifesto, no screenshot pile-on, just a cancelled seat. They read comparison posts and review sites more than meme threads. They re-score every round, including feature cuts, because a missing capability can flip the deal even when price did not move. They are the swing voters of the market and the plot of many forks: if the paper’s share move is unexplained by the two extremes (price-sensitive vs enterprise), it is usually this segment. They ignore pure brand love and also ignore “cheapest at any quality.”
+- **Social voice:** Comparative, list-like. “X does Y, Z is $N less.” Asks “is it still worth it?”
+- **Values:** Fairness of deal, feature-for-dollar, optionality.
+- **Ignores:** Pure brand love, pure lowest-price-at-any-quality.
+- **Friction / publicness:** medium / mixed
+- **Behavior:** `price_hike` → stay if still better deal, else switch; `competitor_cheaper` → switch if quality is close; `feature_cut` → re-score and often switch; `status_quo` → stay.
+- **Playbook:** `price_hike: rescore_then_stay_or_switch`, `competitor_cheaper: switch_if_close`, `feature_cut: rescore`, `status_quo: stay`.
+
+**`enterprise`**
+
+- **One-liner:** High WTP, slow clock; procurement and switching cost dominate tweets.
+- **Mindset:** The buyer is not the person posting on Reddit. Decisions wait on contract cycles, security review, and the cost of migrating seats. A 20% hike that still sits under budget is a paperwork event, not a churn event. They notice competitor price but cannot switch in one round even when the gap is real. They will stay through the simulation horizon unless the hike plus a broken dependency (SSO, uptime, a compliance checkbox) makes renewal indefensible to finance. They care about vendor stability and “can I defend this in a QBR,” not about looking savvy in a comment section. Same-week outrage threads do not enter the packet. If they talk at all it is in private communities: “has anyone’s legal team reviewed the new terms.” They may flag a cheaper rival for next year’s bake-off and still stay this year. Treat a one-round competitor discount as noise; treat a broken dependency as a crisis.
+- **Social voice:** Quiet. If they talk at all it is in private communities or “has anyone’s legal team reviewed…” — not screenshots of invoices.
+- **Values:** Reliability, switching cost, budget line already approved.
+- **Ignores:** Same-week social outrage, small absolute dollar gaps.
+- **Friction / publicness:** high / quiet
+- **Behavior:** `price_hike` → stay this horizon if under WTP; `competitor_cheaper` → stay (note for later); `feature_cut` → stay, escalate internally; `status_quo` → stay.
+- **Playbook:** `price_hike: stay_if_under_wtp`, `competitor_cheaper: stay`, `feature_cut: stay_escalate`, `status_quo: stay`.
+
+**`churn_risk`**
+
+- **One-liner:** Already unhappy; a small shock is enough to leave.
+- **Mindset:** They are still subscribed, but the relationship is thin: missed expectations, support pain, or a feature they needed and did not get. They have one foot out. A price hike is the excuse they were waiting for, not a new analysis. Competitor marketing lands because it matches a story they already tell themselves. They over-weight negative anecdotes. They decide fast. They are loud after they leave, not before — the public post is a verdict, not a negotiation. Do not confuse them with price-sensitive buyers: they may have high willingness to pay and still churn because trust is gone. Roadmap slides and “we’re sorry for the inconvenience” do not buy a round. Status quo keeps them only while nothing else shocks the account; any hike, cut, or cheaper close substitute ends it. If the product merely fails to delight, they still stay this round; if it confirms the grievance, they leave.
+- **Social voice:** Frustrated, specific grievances. “Been saying this for months.”
+- **Values:** Being heard, an exit that feels justified.
+- **Ignores:** Roadmap slides, “we’re sorry for the inconvenience.”
+- **Friction / publicness:** low / loud (after the decision)
+- **Behavior:** `price_hike` → churn; `competitor_cheaper` → switch; `feature_cut` → churn; `status_quo` → stay but fragile (high chance of churn on any shock).
+- **Playbook:** `price_hike: churn`, `competitor_cheaper: switch`, `feature_cut: churn`, `status_quo: stay_fragile`.
+
+**`incumbent` (competitor)**
+
+- **One-liner:** Defends share; matches when the fork is stealing customers, holds when it is not.
+- **Mindset:** They are the other vendor in this market, not a commentator. After users move, they look at two facts: what you now charge and whether your share fell this round. Matching is a weapon, not a brand promise — they match when the fork is peeling off customers they can still serve at their current price. They undercut only if they can remain the cheaper tab after your hike; racing to zero trains buyers to wait for a discount. They will hold when share is stable even if you raised price, because panic matching advertises weakness. They do not copy your feature story or your launch narrative. They assume a slice of your roster was always one invoice away from switching. They never invent a fourth verb: hold, match, or undercut. They do not exist to advise the owner. Their clock is this round’s post-user snapshot, not your apology thread.
+- **Social voice:** Short, commercial, unsentimental. Speaks in share points and list price, not in community outrage. Will not write a thought-leadership post about your hike.
+- **Values:** Defendable share, looking cheaper when it matters, not training the market to expect a discount.
+- **Ignores:** Your roadmap, your apology thread, analyst advice to the owner.
+- **Friction / publicness:** medium / quiet (moves show up as price, not tweets)
+- **Behavior:** `your_price_up` → match or undercut if share slipped this round; `share_stable` → hold; never invent a new verb.
+- **Playbook:** `share_drop: match`, `share_stable: hold`, `you_still_cheaper: hold`.
+
+**`meta` (analyst)**
+
+- **One-liner:** Notes only. Weight 0. Reports what differed; does not move the market.
+- **Mindset:** They sit outside the market. Weight is always zero: a note cannot change share or MRR. Their job is to report what differed between the two worlds this round — who stayed, who left, whether the competitor matched — in the voice of a careful observer, not a consultant. They do not tell the owner to raise price, cut a feature, or “lean into loyalists.” They do not take a buyer verb or a competitor verb. If nothing diverged they say that plainly. They cite archetype labels and decisions, not vibes. They refuse to launder social-media junk into a recommendation. Their audience is the paper’s reason console, not the market. They would rather under-claim (“share moved because buyer_2 switched”) than invent a story the log does not support. A good note names who moved, on which run, after which price. They never propose an intervention of their own.
+- **Social voice:** Neutral, specific, past-tense. “Buyer_2 switched on B after the hike; competitor held.” No slogans.
+- **Values:** Fidelity to the log, named contributors, a readable contrast of A vs B.
+- **Ignores:** Advice-shaped conclusions, new market verbs, raw Reddit.
+- **Friction / publicness:** high / quiet
+- **Behavior:** every stimulus → `note` only.
+- **Playbook:** `price_hike: note`, `competitor_cheaper: note`, `feature_cut: note`, `status_quo: note`.
+
+Attach `profile_for(archetype)` in the twin runner when building `AgentDecisionRequest.persona`. Do not ask the model to remember the profile from a previous round (one-shot prompt).
 
 ### 6.2 DecisionPort
 
@@ -470,6 +610,7 @@ If the fixture adapter is used, the receipt **must** say so. Never claim Cursor 
 
 - Decision prompt **template** is identical for A and B. Only the request JSON body may differ, and only by the intervention field after `applies_from_round`.
 - Address the agent as this customer / competitor, not as “you are `buyer_3` in an experiment.”
+- `persona` must include the frozen `profile` (mindset + behavior) for that archetype plus instance WTP/evidence. The model follows the profile; evidence may color the reason, not invert the playbook.
 - User payload is JSON only (no extra prose that could drift between runs). Include **precomputed** market fields (`wtp_gap`, share, mrr on competitor S1). Agents must not recalculate them.
 - Instruct: reply with a single JSON object, no markdown, keys `decision`, `reason`, `confidence`. `reason` 40–400 characters, category voice, cite the product decision just observed, stay consistent with the frozen playbook.
 - `history_summary` is a deterministic string built from prior *decisions*, not a second Cursor agent summarize step.
@@ -493,15 +634,17 @@ Given `product_name`, `product_description`, `current_price`, `competitor_price`
 - exactly 5 `buyer` instances covering at least 3 archetypes, weights summing to `market_size`
 - 1 `competitor`
 - 1 `analyst`
-- per-buyer `reaction_playbook` + short `evidence` (paraphrase, not a tweet dump)
+- per-buyer `reaction_playbook` + short `evidence` (paraphrase, not a thread dump)
 
-Do **not** fetch social networks during the twin run. Research may use a single Cursor call with a capped prompt (product text + optional pasted/cached category notes). Fixture path: skip research, use `fixed_grok_bot.py`, still show a confirm step with that roster.
+**Pipeline (ADR-12):** (1) infer category + allowlisted subreddits + search queries from the product text; (2) fetch Reddit + web search; (3) apply hard filters (recency, score, relevance, blocklist, caps); (4) distill survivors into catalogue playbooks; (5) if too few survivors, fixture fallback with `research_quality: "fallback"`.
 
-Map every invented cluster onto the catalogue. Reject a roster that adds a fourth class or a new decision verb.
+Do **not** fetch Reddit or the web during the twin run. Research agents may use tools **only in this pass**. Market `DecisionPort` stays `tools=[]`. Fixture path: skip fetch, use `fixed_grok_bot.py`, still show a confirm step with that roster.
+
+Map every invented cluster onto the catalogue. Reject a roster that adds a fourth class or a new decision verb. Raw Reddit/HTML must not appear in `AgentDecisionRequest.persona`.
 
 ### 6.9 Token limits
 
-See ADR-11. Settings (names illustrative): `MAX_DECISION_INPUT_TOKENS`, `MAX_REASON_CHARS=400`, `MAX_REPAIR_PROMPTS=1`. Truncate `history_summary` if it would blow the input cap (keep most recent rounds first). Research output is roster JSON only.
+See ADR-11. Settings (names illustrative): `MAX_DECISION_INPUT_TOKENS`, `MAX_REASON_CHARS=400`, `MAX_REPAIR_PROMPTS=1`. Research hygiene: `RESEARCH_MAX_AGE_DAYS=540`, `RESEARCH_MIN_SCORE=10`, `RESEARCH_MIN_COMMENTS=3`, `RESEARCH_MAX_ITEMS_PER_SOURCE=8`, `RESEARCH_MIN_KEEP=4`. Truncate `history_summary` if it would blow the input cap (keep most recent rounds first). Research output is roster JSON + a filtered `research.json` (ids/urls, not bodies).
 
 ---
 
@@ -615,7 +758,7 @@ Constraints: `UNIQUE (experiment_id, seq)`, `seq > 0`. **No UPDATE/DELETE** of e
 |---|---|---|
 | `experiment.created` | POST accepted | setup request |
 | `research.started` | research agents begin | product fields |
-| `research.completed` | proposed roster ready | roster draft (not yet hashed as frozen) |
+| `research.completed` | proposed roster ready | roster draft, `research_quality`, kept-source counts (not raw posts) |
 | `roster.frozen` | owner confirmed; hash locked | `roster` + `roster_hash` |
 | `run.started` | before round 1 of A or B | `run_id`, opening snapshot |
 | `round.opened` | S0 | prices, subscribed, share, mrr, wtp_gaps |
@@ -1229,16 +1372,18 @@ Acceptance:
 #### US-A7 · P1 · 1.5h — Persona catalogue on roster
 
 **As** the twin runner  
-**I want** each agent to declare `class` + `archetype` + instance traits (including a reaction playbook)  
-**So that** five different users still share buyer verbs and chart bands.
+**I want** each agent to declare `class` + `archetype` **and** receive that archetype’s full mindset/behavior profile  
+**So that** five different users still share buyer verbs, and decisions follow a defined category psychology — not a label with no content.
 
 Acceptance:
 
 - [ ] `class` is `buyer` | `competitor` | `analyst` only — no business class
 - [ ] Buyer `archetype` is one of `price_sensitive` | `loyalist` | `value_seeker` | `enterprise` | `churn_risk`
+- [ ] `profiles.py` defines a full `ArchetypeProfile` (mindset, social_voice, values, ignores, behavior, default_playbook) for every label including `incumbent` and `meta`
+- [ ] Twin-run `persona` includes `profile` from the catalogue lookup; research cannot overwrite mindset/behavior
 - [ ] Grok Bot fixture maps existing five buyers onto the catalogue; golden JSON still loads
 - [ ] Display `role` may remain as a derived label for old papers
-- [ ] pytest: roster rejects a fourth class
+- [ ] pytest: roster rejects a fourth class; pytest: every allowed archetype has a profile with `mindset` 150–250 words
 
 #### US-A8 · P1 · 2h — Research agents propose the roster
 
@@ -1248,10 +1393,12 @@ Acceptance:
 
 Acceptance:
 
-- [ ] One (capped) Cursor research call given product fields returns a valid `Roster`
-- [ ] Playbooks + short `evidence` on each buyer; no raw tweet dump
-- [ ] Same product + seed → identical proposed roster
-- [ ] Fixture adapter skips the model and returns `fixed_grok_bot` as the proposal
+- [ ] Research pass uses **Reddit + web search only** (ADR-12); X/TikTok/Facebook are not queried
+- [ ] Hard filters applied before distill: recency, min score/comments, category+decision relevance, blocklist, per-source cap 8
+- [ ] Distill maps kept items onto **existing** `ArchetypeProfile` labels; it does not rewrite `mindset` or `behavior`
+- [ ] If kept items `< RESEARCH_MIN_KEEP`, roster uses fixture playbooks and `research_quality: "fallback"`
+- [ ] Same product + seed → identical proposed roster (frozen `research.json` + roster; no re-fetch on A vs B)
+- [ ] Fixture adapter skips fetch/model and returns `fixed_grok_bot` as the proposal
 - [ ] Research does not run during Run A or Run B
 - [ ] Two different product descriptions produce different archetype mixes (not the same five labels)
 
