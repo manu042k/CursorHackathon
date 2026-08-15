@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Protocol
+from typing import Any, Awaitable, Callable
 
+from app.agents.port import DecisionPort, decide_validated
 from app.contracts import (
     AgentDecision,
     AgentDecisionRequest,
@@ -23,11 +24,6 @@ from app.store import write_artifact
 
 ALIGNMENT_ERROR = "alignment_broken"
 FLOAT_EPS = 1e-9
-
-
-class DecisionPort(Protocol):
-    async def decide(self, request: AgentDecisionRequest) -> AgentDecision: ...
-
 
 OnRound = Callable[[RunId, int, float, float], Awaitable[None] | None]
 
@@ -121,7 +117,7 @@ async def _run_one(
                 status=status,
             )
             call_order.append((run_id.value, agent_id, round_n))
-            decision = await adapter.decide(request)
+            decision = await decide_validated(adapter, request)
             decisions[agent_id] = decision
             agent_logs.append(
                 AgentLog(
