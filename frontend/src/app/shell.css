@@ -1,0 +1,227 @@
+.app-nav {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: var(--space-lg) var(--space-xl);
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.app-nav__logo {
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: var(--text-body);
+  text-decoration: none;
+  justify-self: start;
+}
+
+.app-nav__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-body);
+  letter-spacing: -0.02em;
+  justify-self: center;
+}
+
+.app-nav__action {
+  justify-self: end;
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  font-size: var(--text-body);
+}
+
+.app-nav__links {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xl);
+}
+
+.app-nav__links a {
+  color: var(--color-ink);
+  text-decoration: none;
+  font-size: var(--text-body);
+}
+
+.app-nav__links a:hover,
+.app-nav__links a.is-active {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.app-nav__cta {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 16px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  text-decoration: none;
+  font-size: var(--text-button);
+  font-weight: 500;
+}
+
+.app-nav__links a.app-nav__cta,
+.app-nav__links a.app-nav__cta:hover {
+  color: var(--color-on-primary);
+  text-decoration: none;
+}
+
+.runs {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--space-xxl) var(--space-xl) var(--space-section);
+}
+
+.runs__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--space-xl);
+  margin-bottom: var(--space-xxl);
+}
+
+.runs__empty {
+  margin: 0;
+  color: var(--color-slate);
+  padding: var(--space-lg) 0;
+  border-top: 1px solid var(--color-hairline);
+}
+
+.runs__table {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.runs-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr auto auto;
+  gap: var(--space-lg);
+  align-items: baseline;
+  padding: var(--space-lg) 0;
+  border-bottom: 1px solid var(--color-hairline);
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+.runs-row:hover {
+  text-decoration: none;
+  color: var(--color-action-blue);
+}
+
+.runs-row__name {
+  font-size: var(--text-body);
+}
+
+.runs-row__meta,
+.runs-row__when {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: 0.28px;
+  color: var(--color-slate);
+}
+
+.runs-row__status {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: 0.28px;
+}
+
+.runs-row__status.is-running {
+  color: var(--color-action-blue);
+}
+
+.runs-row__status.is-complete {
+  color: var(--color-deep-green);
+}
+
+.runs-row__status.is-failed {
+  color: var(--color-error);
+}
+
+@media (max-width: 700px) {
+  .runs-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.button-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: auto;
+  padding: var(--button-padding);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: var(--text-button);
+  font-weight: 500;
+  line-height: 1.71;
+  cursor: pointer;
+}
+
+.button-primary:hover {
+  text-decoration: none;
+  opacity: 0.92;
+}
+
+.shell-main {
+  padding: var(--space-section) var(--space-xl);
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.shell-kicker {
+  margin: 0 0 var(--space-md);
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  letter-spacing: 0.28px;
+  color: var(--color-muted);
+}
+
+.shell-headline {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(40px, 8vw, var(--text-heading));
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.receipt {
+  margin: var(--space-xl) 0 0;
+}
+
+.receipt__row {
+  display: grid;
+  grid-template-columns: minmax(8rem, 12rem) 1fr;
+  gap: var(--space-md);
+  padding: var(--space-xs) 0;
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.receipt dt,
+.receipt dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  letter-spacing: 0.28px;
+  color: var(--color-ink);
+}
+
+.receipt dt {
+  color: var(--color-muted-foreground);
+}
+
+.button-secondary {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  background: none;
+  border: 0;
+  padding: 8px 0;
+  font-size: var(--text-body);
+  cursor: pointer;
+}

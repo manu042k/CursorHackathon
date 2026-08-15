@@ -1,0 +1,125 @@
+{
+  "method": "decision_diff_v1",
+  "divergence_by_round": [
+    {
+      "round": 1,
+      "delta": 0,
+      "top_contributors": []
+    },
+    {
+      "round": 2,
+      "delta": 2,
+      "top_contributors": [
+        {
+          "agent_id": "buyer_1",
+          "contribution_pct": 100,
+          "reason": "Price now $144 is $39 above my willingness to pay of $105; Claude Cowork is $100. I leave."
+        }
+      ]
+    },
+    {
+      "round": 3,
+      "delta": 5,
+      "top_contributors": [
+        {
+          "agent_id": "buyer_1",
+          "contribution_pct": 20,
+          "reason": "Price now $144 is $39 above my willingness to pay of $105; Claude Cowork is $100. I leave."
+        },
+        {
+          "agent_id": "competitor",
+          "contribution_pct": 55,
+          "reason": "I hold Claude Cowork at $100 while your list price is $144 this round."
+        },
+        {
+          "agent_id": "buyer_4",
+          "contribution_pct": 25,
+          "reason": "Price $120 is $35 under my willingness to pay of $155; loyalty 0.7. I stay subscribed."
+        }
+      ]
+    },
+    {
+      "round": 4,
+      "delta": 9,
+      "top_contributors": [
+        {
+          "agent_id": "buyer_3",
+          "contribution_pct": 62,
+          "reason": "Price $144 sits on my willingness to pay of $140; I switch to Claude Cowork at $100."
+        },
+        {
+          "agent_id": "competitor",
+          "contribution_pct": 38,
+          "reason": "Your price is $144 and share is slipping; I match $144 to stop further loss."
+        }
+      ]
+    },
+    {
+      "round": 5,
+      "delta": 10,
+      "top_contributors": [
+        {
+          "agent_id": "buyer_2",
+          "contribution_pct": 71,
+          "reason": "Price now $144 is $16 above my willingness to pay of $128; Claude Cowork is $100. I leave."
+        },
+        {
+          "agent_id": "competitor",
+          "contribution_pct": 19,
+          "reason": "Your price is $144 and share is slipping; I match $144 to stop further loss."
+        },
+        {
+          "agent_id": "buyer_5",
+          "contribution_pct": 10,
+          "reason": "Price $144 is $36 under my willingness to pay of $180; loyalty 0.85. I stay subscribed."
+        }
+      ]
+    },
+    {
+      "round": 6,
+      "delta": 10,
+      "top_contributors": [
+        {
+          "agent_id": "buyer_4",
+          "contribution_pct": 70,
+          "reason": "Price $144 is $11 under my willingness to pay of $155; loyalty 0.7. I stay subscribed."
+        },
+        {
+          "agent_id": "buyer_2",
+          "contribution_pct": 18,
+          "reason": "Price now $144 is $16 above my willingness to pay of $128; Claude Cowork is $100. I leave."
+        },
+        {
+          "agent_id": "competitor",
+          "contribution_pct": 12,
+          "reason": "Your price is $144 and share is slipping; I match $144 to stop further loss."
+        }
+      ]
+    },
+    {
+      "round": 7,
+      "delta": 10,
+      "top_contributors": []
+    },
+    {
+      "round": 8,
+      "delta": 10,
+      "top_contributors": []
+    }
+  ],
+  "summary_narrative": {
+    "text": "Raising Grok Bot 20% from the $120 Teams seat to $144 costs 10 points of share and still adds $115 MRR, because the buyers who left sat at willingness-to-pay of $128\u2013$140. Remaining customers are the enterprise segment that needs the always-on computer.",
+    "citations": [
+      {
+        "agent_id": "buyer_3",
+        "round": 4,
+        "run_id": "B"
+      },
+      {
+        "agent_id": "competitor",
+        "round": 4,
+        "run_id": "B"
+      }
+    ]
+  }
+}

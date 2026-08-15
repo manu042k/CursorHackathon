@@ -1,0 +1,55 @@
+---
+description: Implement one architecture user story per git branch, test it, then push and merge
+alwaysApply: true
+---
+
+# Story-by-story branches
+
+When implementing this repo, do **one** `US-*` story at a time from [`architecture.md`](architecture.md) §14. Do not batch stories. Do not start UI until that story’s turn.
+
+## Order (P0 first; do not skip ahead)
+
+`US-X1` → `US-X2` → `US-A2` → `US-A4` → `US-B1` → `US-B2` → `US-B3` → `US-B4` → `US-B5` → `US-B6` → `US-A1` → `US-C1` → `US-C2` → `US-C3` → `US-D1` → `US-D2` → `US-D3` → `US-D4` → `US-C4` → `US-D5` → `US-D6` → `US-X3` → `US-X5` → `US-A3` → `US-X4`
+
+Then remaining P1 if P0 is green: `US-A6`, `US-B7`, `US-B8`, `US-C5`, `US-C6`. **Skip** `US-D7`. **Skip** `US-A5` (superseded).
+
+Then this revision, in order: `US-B10` → `US-A7` → `US-A9` → `US-A10` → `US-B9` → `US-A8` → `US-C8` → `US-C7` → `US-D8`.
+
+If the trace panel is not working, do not start `US-A8`; ship fixture.
+
+Code goes in `frontend/` and `backend/` (not repo root). Follow §10 for UI. Follow `DESIGN-Guide.md` for website files.
+
+## Loop (every story)
+
+```bash
+# BAD — two stories, or commit on main
+git checkout -b feature/all-the-backend
+
+# GOOD — one story, from updated main
+git checkout main && git pull
+git checkout -b us-b1-artifact-store
+```
+
+1. Branch from latest `main`: `us-<id>-<short-slug>` (example: `us-x1-contracts`).
+2. Implement **only** that story’s acceptance checkboxes. Stop when they pass.
+3. **Test** before git: backend `pytest` for the story; frontend typecheck/lint or the story’s explicit check. Re-read the story’s `- [ ]` list; if any box fails, do not merge.
+4. Commit with a message that names the story id (why, not a file dump).
+5. `git push -u origin HEAD`
+6. Open and merge a PR, then return to `main`:
+
+```bash
+gh pr create --title "US-B1: artifact store" --body "$(cat <<'EOF'
+## Summary
+- Implements US-B1 from architecture.md §14
+
+## Test plan
+- [ ] Acceptance criteria in US-B1 all pass
+EOF
+)"
+gh pr merge --merge --delete-branch
+git checkout main && git pull
+```
+
+7. Start the next story on a **new** branch from the updated `main`. Never reuse a merged branch.
+
+No `--force` to `main`. No `--no-verify`. Do not merge a red test or an unchecked acceptance box.

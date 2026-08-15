@@ -1,0 +1,494 @@
+{
+  "trajectory": [
+    {
+      "round": 1,
+      "share": 80,
+      "mrr": 2880.0
+    },
+    {
+      "round": 2,
+      "share": 80,
+      "mrr": 2880.0
+    },
+    {
+      "round": 3,
+      "share": 79,
+      "mrr": 2844.0
+    },
+    {
+      "round": 4,
+      "share": 78,
+      "mrr": 2808.0
+    },
+    {
+      "round": 5,
+      "share": 77,
+      "mrr": 2772.0
+    },
+    {
+      "round": 6,
+      "share": 76,
+      "mrr": 2736.0
+    },
+    {
+      "round": 7,
+      "share": 76,
+      "mrr": 2736.0
+    },
+    {
+      "round": 8,
+      "share": 76,
+      "mrr": 2736.0
+    }
+  ],
+  "agent_logs": [
+    {
+      "round": 1,
+      "agent_id": "buyer_1",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $15 over my willingness to pay of $105, but loyalty 0.15 keeps me subscribed this round.",
+      "confidence": 0.7
+    },
+    {
+      "round": 1,
+      "agent_id": "buyer_2",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $8 under my willingness to pay of $128; loyalty 0.3. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 1,
+      "agent_id": "buyer_3",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $20 under my willingness to pay of $140; loyalty 0.35. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 1,
+      "agent_id": "buyer_4",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $35 under my willingness to pay of $155; loyalty 0.7. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 1,
+      "agent_id": "buyer_5",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $60 under my willingness to pay of $180; loyalty 0.85. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 1,
+      "agent_id": "competitor",
+      "run_id": "A",
+      "decision": "hold",
+      "reason": "I hold Claude Cowork at $100 while your list price is $120 this round.",
+      "confidence": 0.72
+    },
+    {
+      "round": 1,
+      "agent_id": "analyst",
+      "run_id": "A",
+      "decision": "note",
+      "reason": "Run A round 1: Grok Bot $120 vs Claude Cowork $100, watching share.",
+      "confidence": 0.85
+    },
+    {
+      "round": 2,
+      "agent_id": "buyer_1",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $15 over my willingness to pay of $105, but loyalty 0.15 keeps me subscribed this round.",
+      "confidence": 0.7
+    },
+    {
+      "round": 2,
+      "agent_id": "buyer_2",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $8 under my willingness to pay of $128; loyalty 0.3. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 2,
+      "agent_id": "buyer_3",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $20 under my willingness to pay of $140; loyalty 0.35. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 2,
+      "agent_id": "buyer_4",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $35 under my willingness to pay of $155; loyalty 0.7. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 2,
+      "agent_id": "buyer_5",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $60 under my willingness to pay of $180; loyalty 0.85. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 2,
+      "agent_id": "competitor",
+      "run_id": "A",
+      "decision": "hold",
+      "reason": "I hold Claude Cowork at $100 while your list price is $120 this round.",
+      "confidence": 0.72
+    },
+    {
+      "round": 2,
+      "agent_id": "analyst",
+      "run_id": "A",
+      "decision": "note",
+      "reason": "Run A round 2: Grok Bot $120 vs Claude Cowork $100, watching share.",
+      "confidence": 0.85
+    },
+    {
+      "round": 3,
+      "agent_id": "buyer_1",
+      "run_id": "A",
+      "decision": "churn",
+      "reason": "Price now $120 is $15 above my willingness to pay of $105; Claude Cowork is $100. I leave.",
+      "confidence": 0.84
+    },
+    {
+      "round": 3,
+      "agent_id": "buyer_2",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $8 under my willingness to pay of $128; loyalty 0.3. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 3,
+      "agent_id": "buyer_3",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $20 under my willingness to pay of $140; loyalty 0.35. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 3,
+      "agent_id": "buyer_4",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $35 under my willingness to pay of $155; loyalty 0.7. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 3,
+      "agent_id": "buyer_5",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $60 under my willingness to pay of $180; loyalty 0.85. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 3,
+      "agent_id": "competitor",
+      "run_id": "A",
+      "decision": "hold",
+      "reason": "I hold Claude Cowork at $100 while your list price is $120 this round.",
+      "confidence": 0.72
+    },
+    {
+      "round": 3,
+      "agent_id": "analyst",
+      "run_id": "A",
+      "decision": "note",
+      "reason": "Run A round 3: Grok Bot $120 vs Claude Cowork $100, watching share.",
+      "confidence": 0.85
+    },
+    {
+      "round": 4,
+      "agent_id": "buyer_1",
+      "run_id": "A",
+      "decision": "churn",
+      "reason": "Price now $120 is $15 above my willingness to pay of $105; Claude Cowork is $100. I leave.",
+      "confidence": 0.84
+    },
+    {
+      "round": 4,
+      "agent_id": "buyer_2",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $8 under my willingness to pay of $128; loyalty 0.3. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 4,
+      "agent_id": "buyer_3",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $20 under my willingness to pay of $140; loyalty 0.35. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 4,
+      "agent_id": "buyer_4",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $35 under my willingness to pay of $155; loyalty 0.7. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 4,
+      "agent_id": "buyer_5",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $60 under my willingness to pay of $180; loyalty 0.85. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 4,
+      "agent_id": "competitor",
+      "run_id": "A",
+      "decision": "hold",
+      "reason": "I hold Claude Cowork at $100 while your list price is $120 this round.",
+      "confidence": 0.72
+    },
+    {
+      "round": 4,
+      "agent_id": "analyst",
+      "run_id": "A",
+      "decision": "note",
+      "reason": "Run A round 4: Grok Bot $120 vs Claude Cowork $100, watching share.",
+      "confidence": 0.85
+    },
+    {
+      "round": 5,
+      "agent_id": "buyer_1",
+      "run_id": "A",
+      "decision": "churn",
+      "reason": "Price now $120 is $15 above my willingness to pay of $105; Claude Cowork is $100. I leave.",
+      "confidence": 0.84
+    },
+    {
+      "round": 5,
+      "agent_id": "buyer_2",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $8 under my willingness to pay of $128; loyalty 0.3. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 5,
+      "agent_id": "buyer_3",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $20 under my willingness to pay of $140; loyalty 0.35. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 5,
+      "agent_id": "buyer_4",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $35 under my willingness to pay of $155; loyalty 0.7. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 5,
+      "agent_id": "buyer_5",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $60 under my willingness to pay of $180; loyalty 0.85. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 5,
+      "agent_id": "competitor",
+      "run_id": "A",
+      "decision": "hold",
+      "reason": "I hold Claude Cowork at $100 while your list price is $120 this round.",
+      "confidence": 0.72
+    },
+    {
+      "round": 5,
+      "agent_id": "analyst",
+      "run_id": "A",
+      "decision": "note",
+      "reason": "Run A round 5: Grok Bot $120 vs Claude Cowork $100, watching share.",
+      "confidence": 0.85
+    },
+    {
+      "round": 6,
+      "agent_id": "buyer_1",
+      "run_id": "A",
+      "decision": "churn",
+      "reason": "Price now $120 is $15 above my willingness to pay of $105; Claude Cowork is $100. I leave.",
+      "confidence": 0.84
+    },
+    {
+      "round": 6,
+      "agent_id": "buyer_2",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $8 under my willingness to pay of $128; loyalty 0.3. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 6,
+      "agent_id": "buyer_3",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $20 under my willingness to pay of $140; loyalty 0.35. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 6,
+      "agent_id": "buyer_4",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $35 under my willingness to pay of $155; loyalty 0.7. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 6,
+      "agent_id": "buyer_5",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $60 under my willingness to pay of $180; loyalty 0.85. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 6,
+      "agent_id": "competitor",
+      "run_id": "A",
+      "decision": "hold",
+      "reason": "I hold Claude Cowork at $100 while your list price is $120 this round.",
+      "confidence": 0.72
+    },
+    {
+      "round": 6,
+      "agent_id": "analyst",
+      "run_id": "A",
+      "decision": "note",
+      "reason": "Run A round 6: Grok Bot $120 vs Claude Cowork $100, watching share.",
+      "confidence": 0.85
+    },
+    {
+      "round": 7,
+      "agent_id": "buyer_1",
+      "run_id": "A",
+      "decision": "churn",
+      "reason": "Price now $120 is $15 above my willingness to pay of $105; Claude Cowork is $100. I leave.",
+      "confidence": 0.84
+    },
+    {
+      "round": 7,
+      "agent_id": "buyer_2",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $8 under my willingness to pay of $128; loyalty 0.3. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 7,
+      "agent_id": "buyer_3",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $20 under my willingness to pay of $140; loyalty 0.35. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 7,
+      "agent_id": "buyer_4",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $35 under my willingness to pay of $155; loyalty 0.7. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 7,
+      "agent_id": "buyer_5",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $60 under my willingness to pay of $180; loyalty 0.85. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 7,
+      "agent_id": "competitor",
+      "run_id": "A",
+      "decision": "hold",
+      "reason": "I hold Claude Cowork at $100 while your list price is $120 this round.",
+      "confidence": 0.72
+    },
+    {
+      "round": 7,
+      "agent_id": "analyst",
+      "run_id": "A",
+      "decision": "note",
+      "reason": "Run A round 7: Grok Bot $120 vs Claude Cowork $100, watching share.",
+      "confidence": 0.85
+    },
+    {
+      "round": 8,
+      "agent_id": "buyer_1",
+      "run_id": "A",
+      "decision": "churn",
+      "reason": "Price now $120 is $15 above my willingness to pay of $105; Claude Cowork is $100. I leave.",
+      "confidence": 0.84
+    },
+    {
+      "round": 8,
+      "agent_id": "buyer_2",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $8 under my willingness to pay of $128; loyalty 0.3. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 8,
+      "agent_id": "buyer_3",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $20 under my willingness to pay of $140; loyalty 0.35. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 8,
+      "agent_id": "buyer_4",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $35 under my willingness to pay of $155; loyalty 0.7. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 8,
+      "agent_id": "buyer_5",
+      "run_id": "A",
+      "decision": "stay",
+      "reason": "Price $120 is $60 under my willingness to pay of $180; loyalty 0.85. I stay subscribed.",
+      "confidence": 0.7
+    },
+    {
+      "round": 8,
+      "agent_id": "competitor",
+      "run_id": "A",
+      "decision": "hold",
+      "reason": "I hold Claude Cowork at $100 while your list price is $120 this round.",
+      "confidence": 0.72
+    },
+    {
+      "round": 8,
+      "agent_id": "analyst",
+      "run_id": "A",
+      "decision": "note",
+      "reason": "Run A round 8: Grok Bot $120 vs Claude Cowork $100, watching share.",
+      "confidence": 0.85
+    }
+  ]
+}

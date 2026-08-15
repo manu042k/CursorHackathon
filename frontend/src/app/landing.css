@@ -1,0 +1,43 @@
+.landing {
+  background-color: var(--color-background);
+  background-image: radial-gradient(circle, #d4d4d8 1.1px, transparent 1.15px);
+  background-size: 22px 22px;
+}
+
+.landing-console__chart {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: #111113;
+  border-radius: 8px;
+}
+
+.landing-console__agents {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 0;
+}
+
+.landing-console__agents li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid #27272a;
+  font-size: 12px;
+}
+
+.landing-console__agents .is-stay {
+  color: #d4d4d8;
+  font-style: normal;
+}
+
+.landing-console__agents .is-churn {
+  color: #fca5a5;
+  font-style: normal;
+}
+
+.landing-console__agents .is-match {
+  color: #a1a1aa;
+  font-style: normal;
+}

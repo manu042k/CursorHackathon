@@ -1,0 +1,15 @@
+{
+  "product_name": "Grok Bot",
+  "product_description": "Always-on AI teammates with their own cloud computer. They sign into your tools, finish jobs end to end, and only come back for approval.",
+  "current_price": 120.0,
+  "market_size": 30,
+  "competitor_count": 1,
+  "competitor_price": 100.0,
+  "buyer_price_sensitivity": "medium",
+  "rounds": 8,
+  "random_seed": 42,
+  "variable_type": "price_change",
+  "variable_delta": "+20%",
+  "applies_from_round": 1,
+  "adapter": "fixture"
+}
