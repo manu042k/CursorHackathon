@@ -4,9 +4,9 @@ A controlled twin-run market experiment: same seed, same frozen roster, **one** 
 
 ## Ports
 
-| App | Directory | Port |
-|---|---|---|
-| API | `backend/` | `8000` |
+| App | Directory   | Port   |
+|-----|-------------|--------|
+| API | `backend/`  | `8000` |
 | Web | `frontend/` | `3000` |
 
 ## Environment
