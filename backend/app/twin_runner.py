@@ -27,6 +27,7 @@ ALIGNMENT_ERROR = "alignment_broken"
 FLOAT_EPS = 1e-9
 
 OnRound = Callable[[RunId, int, float, float], Awaitable[None] | None]
+OnDecision = Callable[[dict[str, Any]], Awaitable[None] | None]
 
 
 @dataclass
@@ -91,6 +92,7 @@ async def _run_one(
     forked_price: float,
     call_order: list[tuple[str, str, int]],
     on_round: OnRound | None,
+    on_decision: OnDecision | None,
 ) -> dict[str, Any]:
     order = observation_order(roster)
     trajectory: list[dict[str, float | int]] = []
@@ -131,6 +133,20 @@ async def _run_one(
                     confidence=decision.confidence,
                 ).model_dump(mode="json")
             )
+            if on_decision is not None:
+                maybe_decision = on_decision(
+                    {
+                        "run_id": run_id.value,
+                        "round": round_n,
+                        "agent_id": agent_id,
+                        "decision": decision.decision,
+                        "reason": decision.reason,
+                        "confidence": decision.confidence,
+                        "current_price": snap_price,
+                    }
+                )
+                if maybe_decision is not None:
+                    await maybe_decision
 
         for agent_id in market.buyer_order:
             choice = decisions[agent_id].decision
@@ -167,6 +183,7 @@ async def run_twin(
     roster: Roster | None = None,
     root: Path | None = None,
     on_round: OnRound | None = None,
+    on_decision: OnDecision | None = None,
 ) -> TwinResult:
     if experiment.variable_type != VariableType.price_change:
         raise ValueError("only price_change is supported")
@@ -191,6 +208,7 @@ async def run_twin(
         forked_price=forked_price,
         call_order=call_order,
         on_round=on_round,
+        on_decision=on_decision,
     )
     write_artifact(experiment_id, "run_a", run_a, root=root)
 
@@ -204,6 +222,7 @@ async def run_twin(
         forked_price=forked_price,
         call_order=call_order,
         on_round=on_round,
+        on_decision=on_decision,
     )
     write_artifact(experiment_id, "run_b", run_b, root=root)
 

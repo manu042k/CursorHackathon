@@ -54,6 +54,10 @@ def test_sse_round_complete_and_complete(tmp_path, monkeypatch):
     assert rounds[0]["run_id"] in {"A", "B"}
     assert 1 <= rounds[0]["round"] <= 8
     assert events[-1] == ("complete", {"id": experiment_id})
+    decisions = [payload for name, payload in events if name == "decision"]
+    assert len(decisions) >= 16
+    assert {"run_id", "round", "agent_id", "decision", "reason", "confidence"} <= set(decisions[0])
+    assert len(decisions[0]["reason"]) >= 20
     _wait_paper(client, experiment_id)
 
     folder = experiment_dir(experiment_id, tmp_path)

@@ -58,6 +58,9 @@ def _execute(experiment_id: str, body: CreateExperimentRequest) -> None:
             },
         )
 
+    def on_decision(payload):
+        registry.append_event(experiment_id, "decision", payload)
+
     try:
         result = asyncio.run(
             run_twin(
@@ -65,6 +68,7 @@ def _execute(experiment_id: str, body: CreateExperimentRequest) -> None:
                 experiment_id,
                 _adapter_for(body),
                 on_round=on_round,
+                on_decision=on_decision,
             )
         )
         registry.set_status(
@@ -135,6 +139,7 @@ async def experiment_events(experiment_id: str):
                 idx += 1
                 yield f"event: {name}\ndata: {json.dumps(data)}\n\n"
             if finished:
+                await asyncio.sleep(0.2)
                 break
             await asyncio.sleep(0.05)
 

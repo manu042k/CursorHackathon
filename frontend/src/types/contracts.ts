@@ -152,6 +152,16 @@ export interface HealthResponse {
   adapter: Adapter;
 }
 
+export interface DecisionEvent {
+  run_id: RunId;
+  round: number;
+  agent_id: string;
+  decision: string;
+  reason: string;
+  confidence: number;
+  current_price: number;
+}
+
 export interface RoundCompleteEvent {
   run_id: RunId;
   round: number;

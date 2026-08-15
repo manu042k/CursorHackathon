@@ -1,8 +1,9 @@
-import type { FailedEvent, RoundCompleteEvent } from "@/types/contracts";
+import type { DecisionEvent, FailedEvent, RoundCompleteEvent } from "@/types/contracts";
 import { API_BASE } from "@/lib/api";
 
 export type ProgressHandlers = {
   onRound: (event: RoundCompleteEvent) => void;
+  onDecision?: (event: DecisionEvent) => void;
   onComplete: (id: string) => void;
   onFailed: (error: string) => void;
 };
@@ -11,6 +12,9 @@ export function subscribeExperimentEvents(id: string, handlers: ProgressHandlers
   const source = new EventSource(`${API_BASE}/experiments/${id}/events`);
   source.addEventListener("round_complete", (message) => {
     handlers.onRound(JSON.parse((message as MessageEvent).data) as RoundCompleteEvent);
+  });
+  source.addEventListener("decision", (message) => {
+    handlers.onDecision?.(JSON.parse((message as MessageEvent).data) as DecisionEvent);
   });
   source.addEventListener("complete", (message) => {
     const payload = JSON.parse((message as MessageEvent).data) as { id: string };

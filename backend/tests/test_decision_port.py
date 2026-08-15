@@ -10,6 +10,7 @@ import pytest
 from app.agents.fixture import FixtureAdapter
 from app.agents.port import DecisionError, DecisionPort, parse_decision_json, validate_decision
 from app.contracts import AgentDecision, AgentDecisionRequest, RunId
+from app.roster.fixed_grok_bot import FORK_PRICE, LIST_PRICE
 
 
 def _run(coro):
@@ -69,8 +70,8 @@ def test_fixture_adapter_stay_churn_switch():
                 run_id=RunId.A,
                 agent_id="buyer_3",
                 round=1,
-                current_price=49,
-                persona={"willingness_to_pay": 55},
+                current_price=LIST_PRICE,
+                persona={"willingness_to_pay": 140},
             )
         )
     )
@@ -80,8 +81,8 @@ def test_fixture_adapter_stay_churn_switch():
                 run_id=RunId.B,
                 agent_id="buyer_1",
                 round=2,
-                current_price=59,
-                persona={"willingness_to_pay": 51},
+                current_price=FORK_PRICE,
+                persona={"willingness_to_pay": 105},
             )
         )
     )
@@ -91,8 +92,8 @@ def test_fixture_adapter_stay_churn_switch():
                 run_id=RunId.B,
                 agent_id="buyer_3",
                 round=4,
-                current_price=59,
-                persona={"willingness_to_pay": 55},
+                current_price=FORK_PRICE,
+                persona={"willingness_to_pay": 140},
             )
         )
     )

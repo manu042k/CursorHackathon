@@ -1,10 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { AgentLog, ExperimentPaper } from "@/types/contracts";
+import type { AgentLog, ExperimentPaper, RosterAgent } from "@/types/contracts";
 
 function byAgent(logs: AgentLog[], round: number): Map<string, AgentLog> {
   return new Map(logs.filter((log) => log.round === round).map((log) => [log.agent_id, log]));
+}
+
+function wtpOf(agent: RosterAgent | undefined): string | null {
+  const value = agent?.traits?.willingness_to_pay;
+  if (typeof value === "number") return `WTP $${Math.round(value)}`;
+  return null;
 }
 
 export function ReasonTrace({
@@ -19,11 +25,16 @@ export function ReasonTrace({
   const [everyone, setEveryone] = useState(false);
   const a = byAgent(paper.logs.run_a, selectedRound);
   const b = byAgent(paper.logs.run_b, selectedRound);
+  const byId = useMemo(
+    () => new Map(paper.roster.agents.map((agent) => [agent.agent_id, agent])),
+    [paper.roster.agents]
+  );
   const ids = useMemo(() => {
     const all = Array.from(new Set([...a.keys(), ...b.keys()]));
     if (everyone) return all;
     return all.filter((id) => (a.get(id)?.decision ?? "") !== (b.get(id)?.decision ?? ""));
   }, [a, b, everyone]);
+  const splits = ids.filter((id) => (a.get(id)?.decision ?? "") !== (b.get(id)?.decision ?? ""));
 
   function scrollTo(agentId: string, round: number) {
     onSelectRound(round);
@@ -42,6 +53,14 @@ export function ReasonTrace({
           {everyone ? "Show differences" : "Show everyone"}
         </button>
       </header>
+      {splits.length > 0 ? (
+        <p className="agent-console-card__why">
+          {splits.length === 1 ? "This is what caused the fork." : "These agents caused the fork."} Same
+          person, two prices, two decisions.
+        </p>
+      ) : (
+        <p className="agent-console-card__why">A and B still agree this round. The worlds have not split yet.</p>
+      )}
       <ul className="agent-console-card__citations">
         {paper.summary_narrative.citations.map((citation) => (
           <li key={`${citation.agent_id}-${citation.round}-${citation.run_id}`}>
@@ -59,15 +78,23 @@ export function ReasonTrace({
         {ids.map((agentId) => {
           const logA = a.get(agentId);
           const logB = b.get(agentId);
+          const differed = (logA?.decision ?? "") !== (logB?.decision ?? "");
           return (
-            <article key={agentId} id={`trace-${agentId}`} className="agent-console-card__agent">
-              <h3>{agentId}</h3>
+            <article
+              key={agentId}
+              id={`trace-${agentId}`}
+              className={differed ? "agent-console-card__agent is-split" : "agent-console-card__agent"}
+            >
+              <h3>
+                {agentId}
+                {wtpOf(byId.get(agentId)) ? <span>{wtpOf(byId.get(agentId))}</span> : null}
+              </h3>
               <p className="agent-console-card__run">
-                <span>A {logA?.decision ?? "—"}</span>
+                <span className={`decision-chip decision-chip--${logA?.decision ?? "none"}`}>A {logA?.decision ?? "—"}</span>
                 {logA?.reason}
               </p>
               <p className="agent-console-card__run">
-                <span>B {logB?.decision ?? "—"}</span>
+                <span className={`decision-chip decision-chip--${logB?.decision ?? "none"}`}>B {logB?.decision ?? "—"}</span>
                 {logB?.reason}
               </p>
             </article>

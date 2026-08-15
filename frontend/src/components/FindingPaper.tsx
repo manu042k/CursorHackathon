@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { Receipt } from "@/components/Receipt";
 import { MetricCards, PaperHeader } from "@/components/PaperHeader";
@@ -43,6 +44,11 @@ export function FindingPaper({ paper }: { paper: ExperimentPaper }) {
       />
       <RosterPreview paper={paper} />
       <Receipt receipt={paper.receipt} />
+      <p className="finding__next">
+        <Link href="/" className="button-primary">
+          New experiment
+        </Link>
+      </p>
     </article>
   );
 }

@@ -33,8 +33,12 @@
   justify-self: center;
 }
 
-.app-nav__spacer {
+.app-nav__action {
   justify-self: end;
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  font-size: var(--text-body);
 }
 
 .button-primary {
