@@ -11,15 +11,17 @@ from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
+from app.agents.cursor_adapter import CursorSdkAdapter
 from app.agents.fixture import FixtureAdapter
 from app.attribution import attribute_result
-from app.contracts import CreateExperimentRequest, CreateExperimentResponse, Status
+from app.contracts import Adapter, CreateExperimentRequest, CreateExperimentResponse, Status
+from app.cursor_client import cursor_lifespan
 from app.paper import paper_from_disk, paper_from_result
 from app.registry import ExperimentRegistry
 from app.store import ARTIFACT_NAMES, read_artifact, write_artifact
 from app.twin_runner import run_twin
 
-app = FastAPI(title="Counterfactual Replay", version="0.1.0")
+app = FastAPI(title="Counterfactual Replay", version="0.1.0", lifespan=cursor_lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
@@ -28,7 +30,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.state.registry = ExperimentRegistry()
+app.state.cursor = None
 app.state.adapter_factory = lambda: FixtureAdapter()
+
+
+def _adapter_for(body: CreateExperimentRequest):
+    if body.adapter == Adapter.cursor and getattr(app.state, "cursor", None) is not None:
+        return CursorSdkAdapter(app.state.cursor)
+    return app.state.adapter_factory()
 
 
 def _execute(experiment_id: str, body: CreateExperimentRequest) -> None:
@@ -52,7 +61,7 @@ def _execute(experiment_id: str, body: CreateExperimentRequest) -> None:
             run_twin(
                 body,
                 experiment_id,
-                app.state.adapter_factory(),
+                _adapter_for(body),
                 on_round=on_round,
             )
         )

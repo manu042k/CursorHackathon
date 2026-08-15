@@ -19,12 +19,7 @@ from app.contracts import (
     SummaryNarrative,
 )
 
-DECISION_PROMPT_TEMPLATE = (
-    "You are {agent_id} in a controlled market experiment. "
-    "Observe the request JSON and return only JSON "
-    '{"decision": string, "reason": string, "confidence": number}. '
-    "reason must be at least 40 characters and mention prices in dollars."
-)
+from app.agents.prompts import DECISION_PROMPT_TEMPLATE
 
 AGENT_MENTION = re.compile(r"\b(buyer_\d+|competitor|analyst)\b")
 
