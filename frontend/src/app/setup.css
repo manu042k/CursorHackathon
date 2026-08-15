@@ -16,12 +16,18 @@
 }
 
 .setup__sentence {
-  margin: 0 0 var(--space-xl);
+  margin: 0 0 var(--space-md);
   font-family: var(--font-display);
   font-size: clamp(32px, 5vw, 48px);
   font-weight: 400;
   line-height: 1.15;
   letter-spacing: -0.02em;
+}
+
+.setup__honesty {
+  margin: 0 0 var(--space-xl);
+  color: var(--color-slate);
+  max-width: 28rem;
 }
 
 .setup__error {

@@ -109,6 +109,9 @@ export function HypothesisForm() {
       <div className="setup__story">
         <p className="setup__kicker">You are testing</p>
         <h1 className="setup__sentence">{sentence}</h1>
+        <p className="setup__honesty">
+          Divergence is causal inside this simulation — not a market forecast.
+        </p>
         <ButtonPrimary type="submit" disabled={pending}>
           Run this experiment
         </ButtonPrimary>
