@@ -32,6 +32,7 @@ from app.cursor_client import cursor_lifespan
 from app.ledger import InMemoryLedger, PostgresLedger
 from app.paper import paper_from_disk, paper_from_result
 from app.registry import ExperimentRegistry
+from app.roster.generate import propose_roster
 from app.store import (
     ARTIFACT_NAMES,
     HIDDEN_EXPERIMENT_IDS,
@@ -59,6 +60,21 @@ def _adapter_for(body: CreateExperimentRequest):
     if body.adapter == Adapter.cursor and getattr(app.state, "cursor", None) is not None:
         return CursorSdkAdapter(app.state.cursor)
     return app.state.adapter_factory()
+
+
+def _research(experiment_id: str, body: CreateExperimentRequest) -> None:
+    registry: ExperimentRegistry = app.state.registry
+    registry.set_status(experiment_id, Status.researching)
+    registry.append_event(experiment_id, "research_started", {"id": experiment_id})
+    try:
+        roster = propose_roster(body)
+        write_artifact(experiment_id, "roster", roster.model_dump(mode="json"))
+        registry.set_status(experiment_id, Status.roster_ready)
+        registry.append_event(experiment_id, "research_complete", {"id": experiment_id})
+    except Exception as exc:
+        registry.set_status(experiment_id, Status.failed)
+        registry.errors[experiment_id] = str(exc)
+        registry.append_event(experiment_id, "failed", {"error": str(exc)})
 
 
 def _execute(experiment_id: str, body: CreateExperimentRequest) -> None:
@@ -166,10 +182,25 @@ def _execute(experiment_id: str, body: CreateExperimentRequest) -> None:
 @app.post("/experiments", status_code=202, response_model=CreateExperimentResponse)
 def create_experiment(body: CreateExperimentRequest) -> CreateExperimentResponse:
     experiment_id = f"exp_{uuid.uuid4().hex[:10]}"
-    app.state.registry.set_status(experiment_id, Status.created)
+    app.state.registry.set_status(experiment_id, Status.researching)
     write_artifact(experiment_id, "experiment", body.model_dump(mode="json"))
+    threading.Thread(target=_research, args=(experiment_id, body), daemon=True).start()
+    return CreateExperimentResponse(id=experiment_id, status=Status.researching)
+
+
+@app.post(
+    "/experiments/{experiment_id}/start",
+    status_code=202,
+    response_model=CreateExperimentResponse,
+)
+def start_experiment(experiment_id: str) -> CreateExperimentResponse:
+    status = app.state.registry.status.get(experiment_id)
+    if status != Status.roster_ready:
+        raise HTTPException(status_code=409, detail="roster not ready")
+    body = CreateExperimentRequest.model_validate(read_artifact(experiment_id, "experiment"))
+    app.state.registry.set_status(experiment_id, Status.running_a)
     threading.Thread(target=_execute, args=(experiment_id, body), daemon=True).start()
-    return CreateExperimentResponse(id=experiment_id, status=Status.created)
+    return CreateExperimentResponse(id=experiment_id, status=Status.running_a)
 
 
 def _list_item_from_folder(folder: Path, registry: ExperimentRegistry) -> ExperimentListItem | None:
@@ -234,12 +265,20 @@ def get_experiment(experiment_id: str, response: Response):
     status = registry.status.get(experiment_id)
     if status in {
         Status.created,
+        Status.researching,
         Status.running_a,
         Status.running_b,
         Status.attributing,
     }:
         response.status_code = 202
         return CreateExperimentResponse(id=experiment_id, status=status)
+    if status == Status.roster_ready:
+        try:
+            roster = read_artifact(experiment_id, "roster")
+        except FileNotFoundError:
+            response.status_code = 202
+            return CreateExperimentResponse(id=experiment_id, status=status)
+        return {"id": experiment_id, "status": status.value, "roster": roster}
     if experiment_id in registry.papers:
         return registry.papers[experiment_id].model_dump(mode="json")
     paper = paper_from_disk(experiment_id)

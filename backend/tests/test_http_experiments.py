@@ -11,6 +11,7 @@ from app.agents.fixture import FixtureAdapter
 from app.contracts import AgentDecision, AgentDecisionRequest, Status
 from app.main import app
 from app.registry import ExperimentRegistry
+from app.store import read_artifact
 
 PAYLOAD = {
     "product_name": "Acme Analytics",
@@ -35,9 +36,33 @@ def _wait_paper(client: TestClient, experiment_id: str, timeout: float = 15.0):
     while time.time() < deadline:
         last = client.get(f"/experiments/{experiment_id}")
         if last.status_code == 200:
-            return last
+            payload = last.json()
+            if isinstance(payload, dict) and payload.get("status") == "complete":
+                return last
         time.sleep(0.05)
     raise AssertionError(last.status_code if last else None, last.text if last else None)
+
+
+def _wait_roster_ready(client: TestClient, experiment_id: str, timeout: float = 5.0):
+    deadline = time.time() + timeout
+    last = None
+    while time.time() < deadline:
+        last = client.get(f"/experiments/{experiment_id}")
+        if last.status_code == 200:
+            payload = last.json()
+            if isinstance(payload, dict) and payload.get("status") == "roster_ready":
+                return last
+        time.sleep(0.05)
+    raise AssertionError(last.status_code if last else None, last.text if last else None)
+
+
+def _start_after_roster(client: TestClient, payload: dict | None = None) -> str:
+    created = client.post("/experiments", json=payload or PAYLOAD)
+    experiment_id = created.json()["id"]
+    _wait_roster_ready(client, experiment_id)
+    started = client.post(f"/experiments/{experiment_id}/start")
+    assert started.status_code == 202
+    return experiment_id
 
 
 def test_post_returns_202_and_get_paper_when_complete(tmp_path, monkeypatch):
@@ -49,7 +74,10 @@ def test_post_returns_202_and_get_paper_when_complete(tmp_path, monkeypatch):
     assert created.status_code == 202
     body = created.json()
     assert "id" in body
-    assert body["status"] == Status.created.value
+    assert body["status"] == Status.researching.value
+    _wait_roster_ready(client, body["id"])
+    started = client.post(f"/experiments/{body['id']}/start")
+    assert started.status_code == 202
     paper = _wait_paper(client, body["id"])
     payload = paper.json()
     assert payload["status"] == "complete"
@@ -78,8 +106,7 @@ def test_get_202_while_running(tmp_path, monkeypatch):
     app.state.adapter_factory = lambda: GatedAdapter()
     client = TestClient(app)
     try:
-        created = client.post("/experiments", json=PAYLOAD)
-        experiment_id = created.json()["id"]
+        experiment_id = _start_after_roster(client)
         pending = client.get(f"/experiments/{experiment_id}")
         assert pending.status_code == 202
         assert pending.json()["id"] == experiment_id
@@ -151,3 +178,28 @@ def test_list_experiments_hides_golden_and_includes_created(tmp_path, monkeypatc
     row = next(item for item in listed.json() if item["id"] == experiment_id)
     assert row["product_name"] == "Acme Analytics"
     assert row["variable_delta"] == "+20%"
+
+
+def test_create_does_not_start_twin_until_start(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    app.state.registry = ExperimentRegistry()
+    client = TestClient(app)
+    created = client.post("/experiments", json=PAYLOAD)
+    assert created.status_code == 202
+    assert created.json()["status"] == "researching"
+    experiment_id = created.json()["id"]
+    time.sleep(0.2)
+    pending = client.get(f"/experiments/{experiment_id}")
+    assert pending.status_code in {200, 202}
+    body = pending.json()
+    assert body["status"] in {"researching", "roster_ready"}
+    try:
+        read_artifact(experiment_id, "run_a")
+        raise AssertionError("twin started before /start")
+    except FileNotFoundError:
+        pass
+    _wait_roster_ready(client, experiment_id)
+    started = client.post(f"/experiments/{experiment_id}/start")
+    assert started.status_code == 202
+    paper = _wait_paper(client, experiment_id)
+    assert paper.status_code == 200

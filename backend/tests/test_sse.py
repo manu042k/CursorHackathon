@@ -10,7 +10,7 @@ from app.agents.fixture import FixtureAdapter
 from app.main import app
 from app.registry import ExperimentRegistry
 from app.store import experiment_dir
-from tests.test_http_experiments import PAYLOAD, _wait_paper
+from tests.test_http_experiments import PAYLOAD, _start_after_roster, _wait_paper
 
 
 def _parse_sse(text: str) -> list[tuple[str, dict]]:
@@ -45,8 +45,7 @@ def test_sse_round_complete_and_complete(tmp_path, monkeypatch):
     app.state.registry = ExperimentRegistry()
     app.state.adapter_factory = lambda: FixtureAdapter()
     client = TestClient(app)
-    created = client.post("/experiments", json=PAYLOAD)
-    experiment_id = created.json()["id"]
+    experiment_id = _start_after_roster(client)
     events = _read_until_terminal(client, experiment_id)
     rounds = [payload for name, payload in events if name == "round_complete"]
     assert len(rounds) == 8
@@ -89,8 +88,7 @@ def test_sse_failed_terminal(tmp_path, monkeypatch):
     app.state.adapter_factory = lambda: Broken()
     client = TestClient(app)
     payload = {**PAYLOAD, "applies_from_round": 3}
-    created = client.post("/experiments", json=payload)
-    experiment_id = created.json()["id"]
+    experiment_id = _start_after_roster(client, payload)
     events = _read_until_terminal(client, experiment_id)
     assert events[-1][0] == "failed"
     assert events[-1][1]["error"] == "alignment_broken"

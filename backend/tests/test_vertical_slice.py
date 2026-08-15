@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from app.agents.fixture import FixtureAdapter
 from app.main import app
 from app.registry import ExperimentRegistry
-from tests.test_http_experiments import PAYLOAD, _wait_paper
+from tests.test_http_experiments import PAYLOAD, _start_after_roster, _wait_paper
 
 
 def test_fixture_end_to_end_paper_and_trace(tmp_path, monkeypatch):
@@ -13,9 +13,8 @@ def test_fixture_end_to_end_paper_and_trace(tmp_path, monkeypatch):
     app.state.registry = ExperimentRegistry()
     app.state.adapter_factory = lambda: FixtureAdapter()
     client = TestClient(app)
-    created = client.post("/experiments", json=PAYLOAD)
-    assert created.status_code == 202
-    paper = _wait_paper(client, created.json()["id"]).json()
+    experiment_id = _start_after_roster(client)
+    paper = _wait_paper(client, experiment_id).json()
     assert paper["experiment"]["adapter"] == "fixture"
     assert paper["receipt"]["adapter"] == "fixture"
     assert len(paper["metrics"]["share_a"]) == 4

@@ -40,6 +40,8 @@ class CompetitorDecision(str, Enum):
 
 class Status(str, Enum):
     created = "created"
+    researching = "researching"
+    roster_ready = "roster_ready"
     running_a = "running_a"
     running_b = "running_b"
     attributing = "attributing"
