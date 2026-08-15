@@ -42,7 +42,12 @@ def test_create_request_accepts_section_9_1_payload():
 
 def test_adapter_status_and_decision_enums():
     assert {m.value for m in Adapter} == {"cursor", "fixture"}
-    assert {m.value for m in VariableType} == {"price_change"}
+    assert {m.value for m in VariableType} == {
+        "price_change",
+        "competitor_entry",
+        "marketing_spend",
+        "feature_change",
+    }
     assert {m.value for m in RunId} == {"A", "B"}
     assert {m.value for m in BuyerDecision} == {"stay", "churn", "switch"}
     assert {m.value for m in CompetitorDecision} == {"hold", "undercut", "match"}

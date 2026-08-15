@@ -107,8 +107,9 @@ def grounded_narrative(
     share_text = f"{share:+.1f}pp"
     mrr_text = f"${mrr:+.0f}"
     snippet = reason if len(reason) <= 180 else reason[:177] + "..."
+    kind = experiment.variable_type.value
     text = (
-        f"Raising price {experiment.variable_delta} changed share by {share_text} "
+        f"{kind} {experiment.variable_delta} changed share by {share_text} "
         f"and MRR by {mrr_text}, driven by {agent_id} at round {round_n}: “{snippet}”."
     )
     citations = [

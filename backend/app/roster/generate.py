@@ -83,10 +83,10 @@ def propose_roster(
         return roster
 
     category = _category(body)
-    items = fetch_reddit(category, [category, body.product_name]) + fetch_web(
-        [body.product_name, body.product_description[:80]]
+    items = fetch_reddit(category, [body.product_name, "price"]) + fetch_web(
+        [f"{body.product_name} pricing"]
     )
-    kept = filter_items(items, category=category)
+    kept = filter_items(items, category=category, product=body.product_name)
     if len(kept) < settings.RESEARCH_MIN_KEEP:
         roster = normalize_roster(_fixture_proposal(body))
         validate_catalogue(roster)

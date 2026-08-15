@@ -16,6 +16,30 @@ CHURN_B = {"buyer_1": 2, "buyer_2": 4, "buyer_3": 4, "buyer_4": None, "buyer_5":
 WTP = {row[0]: row[3] for row in BUYER_SPECS}
 
 
+def _feature_is_cut(feature: str) -> bool:
+    text = feature.strip().lower()
+    if not text:
+        return False
+    if text.endswith("%"):
+        try:
+            return float(text[:-1]) < 0
+        except ValueError:
+            return False
+    return any(word in text for word in ("cut", "remove", "drop", "worse"))
+
+
+def _market_stress(request: AgentDecisionRequest) -> bool:
+    if request.marketing_spend > 0:
+        return False
+    if request.current_price >= FORK_PRICE:
+        return True
+    if request.competitor_count > 1:
+        return True
+    if request.competitor_price < COMPETITOR_PRICE - 0.5:
+        return True
+    return _feature_is_cut(request.feature_change)
+
+
 class FixtureAdapter:
     def __init__(self) -> None:
         self.roster = build_roster(42)
@@ -38,7 +62,8 @@ class FixtureAdapter:
         loyalty = float(request.persona.get("loyalty_score", 0.3))
         price = request.current_price
         rival = request.competitor_price
-        churn_map = CHURN_B if price >= FORK_PRICE else CHURN_A
+        stressed = _market_stress(request)
+        churn_map = CHURN_B if stressed else CHURN_A
         churn_round = churn_map[request.agent_id]
         if churn_round and request.round >= churn_round:
             if price > wtp + 5:
@@ -72,7 +97,7 @@ class FixtureAdapter:
         return AgentDecision(decision="stay", reason=reason, confidence=0.7)
 
     def _competitor(self, request: AgentDecisionRequest) -> AgentDecision:
-        if request.current_price >= FORK_PRICE and request.round >= 4:
+        if _market_stress(request) and request.round >= 4:
             return AgentDecision(
                 decision="match",
                 reason=(
@@ -91,7 +116,7 @@ class FixtureAdapter:
         )
 
     def _analyst(self, request: AgentDecisionRequest) -> AgentDecision:
-        if request.current_price >= FORK_PRICE and request.round == 4:
+        if _market_stress(request) and request.round == 4:
             return AgentDecision(
                 decision="note",
                 reason=(

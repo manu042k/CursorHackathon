@@ -85,7 +85,7 @@ def test_template_narrative_requires_citations():
     assert narrative.citations
     assert narrative.citations[0].agent_id == "buyer_3"
     assert narrative.citations[0].round == 4
-    assert "Raising price +20%" in narrative.text
+    assert "price_change +20%" in narrative.text
     assert "buyer_3" in narrative.text
     assert "round 4" in narrative.text
 

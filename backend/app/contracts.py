@@ -19,6 +19,9 @@ class Adapter(str, Enum):
 
 class VariableType(str, Enum):
     price_change = "price_change"
+    competitor_entry = "competitor_entry"
+    marketing_spend = "marketing_spend"
+    feature_change = "feature_change"
 
 
 class RunId(str, Enum):
@@ -222,6 +225,9 @@ class AgentDecisionRequest(FrozenModel):
     share: float | None = None
     mrr: float | None = None
     wtp_gap: float | None = None
+    competitor_count: int = 1
+    marketing_spend: float = 0
+    feature_change: str = ""
 
 
 class AgentDecision(FrozenModel):

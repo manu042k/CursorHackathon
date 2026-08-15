@@ -22,7 +22,8 @@ from app.contracts import (
 from app import settings
 from app.history import history_summary
 from app.ledger import Ledger
-from app.market import Market, market_from_roster, parse_price_delta
+from app.intervention import apply_fork
+from app.market import Market, market_from_roster
 from app.roster.catalogue import normalize_roster
 from app.roster.fixed_grok_bot import build_roster
 from app.roster.profiles import persona_payload
@@ -94,7 +95,6 @@ async def _run_one(
     adapter: DecisionPort,
     run_id: RunId,
     market: Market,
-    forked_price: float,
     call_order: list[tuple[str, str, int]],
     on_round: OnRound | None,
     on_decision: OnDecision | None,
@@ -105,8 +105,11 @@ async def _run_one(
     agent_logs: list[dict[str, Any]] = []
 
     for round_n in range(1, experiment.rounds + 1):
-        if run_id == RunId.B and round_n >= experiment.applies_from_round:
-            market.current_price = forked_price
+        fork = apply_fork(experiment, run_id, round_n)
+        if experiment.variable_type == VariableType.price_change:
+            market.current_price = fork.current_price
+        elif experiment.variable_type == VariableType.competitor_entry:
+            market.competitor_price = fork.competitor_price
 
         snap_price = market.current_price
         snap_comp = market.competitor_price
@@ -134,6 +137,9 @@ async def _run_one(
                 share=share,
                 mrr=mrr,
                 wtp_gap=snap_price - wtp if wtp else None,
+                competitor_count=fork.competitor_count,
+                marketing_spend=fork.marketing_spend,
+                feature_change=fork.feature_change,
             )
             call_order.append((run_id.value, agent_id, round_n))
             decision = await decide_validated(adapter, request)
@@ -240,15 +246,12 @@ async def run_twin(
     on_decision: OnDecision | None = None,
     ledger: Ledger | None = None,
 ) -> TwinResult:
-    if experiment.variable_type != VariableType.price_change:
-        raise ValueError("only price_change is supported")
     roster = roster or build_roster(experiment.random_seed)
     roster = normalize_roster(roster)
     opening_market = market_from_roster(
         roster, experiment.current_price, experiment.competitor_price
     )
     opening = opening_market.snapshot()
-    forked_price = parse_price_delta(experiment.current_price, experiment.variable_delta)
     call_order: list[tuple[str, str, int]] = []
 
     write_artifact(experiment_id, "experiment", experiment.model_dump(mode="json"), root=root)
@@ -261,7 +264,6 @@ async def run_twin(
         adapter=adapter,
         run_id=RunId.A,
         market=opening_market.copy(),
-        forked_price=forked_price,
         call_order=call_order,
         on_round=on_round,
         on_decision=on_decision,
@@ -276,7 +278,6 @@ async def run_twin(
         adapter=adapter,
         run_id=RunId.B,
         market=opening_market.copy(),
-        forked_price=forked_price,
         call_order=call_order,
         on_round=on_round,
         on_decision=on_decision,
