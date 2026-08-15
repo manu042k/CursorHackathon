@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Eye, FileText, GitFork } from "lucide-react";
+import { Eye, FileText, GitFork, Layers, Lock, Repeat, Server } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,24 +17,34 @@ const STEPS = [
     title: "Write the fork",
     body: "Name the product, set two prices, and choose when the change applies.",
     icon: GitFork,
+    iconClass: "bg-emerald-50 text-emerald-600",
   },
   {
     n: "02",
     title: "Watch both worlds",
     body: "Buyers and the competitor decide in order. Nodes light as each agent speaks.",
     icon: Eye,
+    iconClass: "bg-sky-50 text-sky-600",
   },
   {
     n: "03",
     title: "Read the paper",
     body: "Share, MRR, and the exact reasons that opened the gap — cited to the agent.",
     icon: FileText,
+    iconClass: "bg-orange-50 text-orange-600",
   },
+];
+
+const METHOD = [
+  { label: "4 rounds", icon: Repeat, iconClass: "bg-violet-50 text-violet-600" },
+  { label: "Frozen roster", icon: Lock, iconClass: "bg-emerald-50 text-emerald-600" },
+  { label: "One variable", icon: Layers, iconClass: "bg-sky-50 text-sky-600" },
+  { label: "Local runtime", icon: Server, iconClass: "bg-orange-50 text-orange-600" },
 ];
 
 export default function HomePage() {
   return (
-    <main>
+    <main className="landing">
       <section className="mx-auto flex max-w-5xl flex-col items-center px-6 py-20 text-center md:py-28">
         <Badge variant="secondary" className="mb-4">
           Counterfactual replay
@@ -121,13 +131,19 @@ export default function HomePage() {
       </section>
 
       <section className="mx-auto mt-16 grid max-w-5xl grid-cols-2 gap-4 px-6 md:grid-cols-4" aria-label="Method">
-        {["4 rounds", "Frozen roster", "One variable", "Local runtime"].map((item) => (
-          <Card key={item}>
-            <CardHeader className="p-4">
-              <CardTitle className="text-sm font-medium">{item}</CardTitle>
-            </CardHeader>
-          </Card>
-        ))}
+        {METHOD.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Card key={item.label}>
+              <CardHeader className="flex flex-row items-center gap-3 p-4">
+                <div className={`flex size-9 shrink-0 items-center justify-center rounded-md ${item.iconClass}`}>
+                  <Icon className="size-4" />
+                </div>
+                <CardTitle className="text-sm font-medium">{item.label}</CardTitle>
+              </CardHeader>
+            </Card>
+          );
+        })}
       </section>
 
       <section className="mx-auto grid max-w-5xl gap-4 px-6 py-16 md:grid-cols-3">
@@ -136,7 +152,7 @@ export default function HomePage() {
           return (
             <Card key={step.n}>
               <CardHeader>
-                <div className="mb-2 flex size-9 items-center justify-center rounded-md bg-secondary">
+                <div className={`mb-2 flex size-9 items-center justify-center rounded-md ${step.iconClass}`}>
                   <Icon className="size-4" />
                 </div>
                 <CardDescription>{step.n}</CardDescription>

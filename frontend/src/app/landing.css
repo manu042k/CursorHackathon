@@ -1,3 +1,9 @@
+.landing {
+  background-color: var(--color-background);
+  background-image: radial-gradient(circle, #d4d4d8 1.1px, transparent 1.15px);
+  background-size: 22px 22px;
+}
+
 .landing-console__chart {
   width: 100%;
   height: auto;
