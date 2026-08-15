@@ -7,7 +7,8 @@
     "start": "next start --port 3000",
     "typecheck": "tsc --noEmit",
     "check:c1": "node scripts/check-c1.mjs",
-    "check:c2": "node scripts/check-c2.mjs"
+    "check:c2": "node scripts/check-c2.mjs",
+    "check:c3": "node scripts/check-c3.mjs"
   },
   "dependencies": {
     "next": "^15.1.0",

@@ -80,3 +80,28 @@
   line-height: 1.1;
   letter-spacing: -0.02em;
 }
+
+.receipt {
+  margin: var(--space-xl) 0 0;
+}
+
+.receipt__row {
+  display: grid;
+  grid-template-columns: minmax(8rem, 12rem) 1fr;
+  gap: var(--space-md);
+  padding: var(--space-xs) 0;
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.receipt dt,
+.receipt dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  letter-spacing: 0.28px;
+  color: var(--color-ink);
+}
+
+.receipt dt {
+  color: var(--color-muted);
+}
