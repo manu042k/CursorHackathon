@@ -30,7 +30,7 @@ class FixtureAdapter:
     def _buyer(self, request: AgentDecisionRequest) -> AgentDecision:
         wtp = float(request.persona.get("willingness_to_pay", WTP[request.agent_id]))
         price = request.current_price
-        churn_map = CHURN_A if request.run_id == RunId.A else CHURN_B
+        churn_map = CHURN_B if price >= 59 else CHURN_A
         churn_round = churn_map[request.agent_id]
         if churn_round and request.round >= churn_round:
             if price > wtp + 5:
@@ -64,7 +64,7 @@ class FixtureAdapter:
         return AgentDecision(decision="stay", reason=reason, confidence=0.7)
 
     def _competitor(self, request: AgentDecisionRequest) -> AgentDecision:
-        if request.run_id == RunId.B and request.round >= 4:
+        if request.current_price >= 59 and request.round >= 4:
             return AgentDecision(
                 decision="match",
                 reason=(
@@ -83,7 +83,7 @@ class FixtureAdapter:
         )
 
     def _analyst(self, request: AgentDecisionRequest) -> AgentDecision:
-        if request.run_id == RunId.B and request.round == 4:
+        if request.current_price >= 59 and request.round == 4:
             return AgentDecision(
                 decision="note",
                 reason=(
