@@ -122,6 +122,29 @@ def test_observation_order_buyers_then_competitor(tmp_path):
     assert [log["agent_id"] for log in round_one_a] == expected
 
 
+def test_buyers_see_s0_competitor_sees_s1_after_churn(tmp_path):
+    adapter = RecordingAdapter()
+    _run(run_twin(_grok(), "exp-s1", adapter, root=tmp_path))
+    round1 = [r for r in adapter.requests if r.round == 1 and r.run_id == RunId.A]
+    buyers = [r for r in round1 if r.agent_id.startswith("buyer_")]
+    competitor = next(r for r in round1 if r.agent_id == "competitor")
+    assert len({id(r) for r in buyers}) == 5
+    buyer_shares = {r.share for r in buyers}
+    assert len(buyer_shares) == 1
+    assert competitor.share <= next(iter(buyer_shares))
+    buyer_idx = [
+        i
+        for i, r in enumerate(adapter.requests)
+        if r.round == 1 and r.run_id == RunId.A and r.agent_id.startswith("buyer_")
+    ]
+    comp_idx = next(
+        i
+        for i, r in enumerate(adapter.requests)
+        if r.round == 1 and r.run_id == RunId.A and r.agent_id == "competitor"
+    )
+    assert max(buyer_idx) < comp_idx
+
+
 def test_alignment_broken_sets_failed(tmp_path):
     result = _run(
         run_twin(

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Awaitable, Callable
@@ -99,7 +100,7 @@ async def _run_one(
     on_decision: OnDecision | None,
     ledger: Ledger | None,
 ) -> dict[str, Any]:
-    order = observation_order(roster)
+    buyer_ids = [a.agent_id for a in roster.agents if a.agent_id.startswith("buyer_")]
     trajectory: list[dict[str, float | int]] = []
     agent_logs: list[dict[str, Any]] = []
 
@@ -110,10 +111,14 @@ async def _run_one(
         snap_price = market.current_price
         snap_comp = market.competitor_price
         decisions: dict[str, AgentDecision] = {}
+        s0_share = market.share()
+        s0_mrr = market.mrr()
 
-        for agent_id in order:
+        async def decide_one(
+            agent_id: str, share: float, mrr: float
+        ) -> tuple[str, AgentDecision, AgentDecisionRequest]:
             agent = agent_by_id(roster, agent_id)
-            status = "subscribed" if agent_id in market.subscribed else "churned"
+            wtp = float(agent.traits.get("willingness_to_pay") or 0)
             request = AgentDecisionRequest(
                 experiment_id=experiment_id,
                 run_id=run_id,
@@ -122,13 +127,21 @@ async def _run_one(
                 current_price=snap_price,
                 competitor_price=snap_comp,
                 persona=persona_payload(agent),
-                status=status,
+                status="subscribed" if agent_id in market.subscribed else "churned",
                 history_summary=history_summary(
                     agent_logs, round_n, max_chars=settings.MAX_HISTORY_CHARS
                 ),
+                share=share,
+                mrr=mrr,
+                wtp_gap=snap_price - wtp if wtp else None,
             )
             call_order.append((run_id.value, agent_id, round_n))
             decision = await decide_validated(adapter, request)
+            return agent_id, decision, request
+
+        async def record(
+            agent_id: str, decision: AgentDecision, request: AgentDecisionRequest
+        ) -> None:
             decisions[agent_id] = decision
             if ledger is not None:
                 ledger.append(
@@ -176,10 +189,23 @@ async def _run_one(
                 if maybe_decision is not None:
                     await maybe_decision
 
+        buyer_results = await asyncio.gather(
+            *[decide_one(bid, s0_share, s0_mrr) for bid in buyer_ids]
+        )
+        for agent_id, decision, request in buyer_results:
+            await record(agent_id, decision, request)
+
         for agent_id in market.buyer_order:
             choice = decisions[agent_id].decision
             if choice in {"churn", "switch"}:
                 market.subscribed.pop(agent_id, None)
+
+        s1_share = market.share()
+        s1_mrr = market.mrr()
+        for agent_id in ("competitor", "analyst"):
+            if any(agent.agent_id == agent_id for agent in roster.agents):
+                aid, decision, request = await decide_one(agent_id, s1_share, s1_mrr)
+                await record(aid, decision, request)
 
         competitor = decisions.get("competitor")
         if competitor is not None:
