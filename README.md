@@ -85,32 +85,4 @@ cd backend && .venv/bin/pytest
 cd frontend && npx tsc --noEmit
 ```
 
-Vijay Ram Enaganti is inviting you to a scheduled Zoom meeting.
-
-Topic: Vijay Ram Enaganti's Zoom Meeting
-Join Zoom Meeting
-https://ucr.zoom.us/j/99620594965?pwd=QaPA54w7PY9MU6Z0Rq038C8M94kOru.1
-
-Meeting ID: 996 2059 4965
-Passcode: 660223
-
----
-
-One tap mobile
-+13462487799,,99620594965# US (Houston)
-+17209289299,,99620594965# US (Denver)
-
----
-
-Dial by your location
-• +1 346 248 7799 US (Houston)
-• +1 720 928 9299 US (Denver)
-• +1 206 337 9723 US (Seattle)
-• +1 213 338 8477 US (Los Angeles)
-• +1 669 219 2599 US (San Jose)
-• +1 786 635 1003 US (Miami)
-• +1 312 626 6799 US (Chicago)
-• +1 470 250 9358 US (Atlanta)
-• +1 646 876 9923 US (New York)
-
----
+Video Link: https://ucr.zoom.us/clips/share/d6uLRZFOQz-AjEMdXZbweQ
