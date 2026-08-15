@@ -104,7 +104,27 @@ def test_intervention_only_on_b_from_applies_from_round(tmp_path):
     assert result.run_b["trajectory"][2]["current_price"] == FORK_PRICE
 
 
-def test_observation_order_buyers_then_competitor(tmp_path):
+def test_competitor_entry_only_changes_rival_on_b(tmp_path):
+    adapter = RecordingAdapter()
+    result = _run(
+        run_twin(
+            _grok(variable_type="competitor_entry", variable_delta="-20%", applies_from_round=3),
+            "exp-entry",
+            adapter,
+            root=tmp_path,
+        )
+    )
+    assert result.status == Status.complete
+    rival = parse_price_delta(COMPETITOR_PRICE, "-20%")
+    for req in adapter.requests:
+        if req.round < 3 or req.run_id == RunId.A:
+            assert req.competitor_count == 1
+            assert req.current_price == LIST_PRICE
+        else:
+            assert req.competitor_count == 2
+            assert req.competitor_price == rival
+            assert req.current_price == LIST_PRICE
+
     adapter = FixtureAdapter()
     result = _run(run_twin(_grok(), "exp-order", adapter, root=tmp_path))
     expected = observation_order(result.roster)

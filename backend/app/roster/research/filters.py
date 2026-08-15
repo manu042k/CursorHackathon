@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import datetime, timezone
+import re
 
 DECISION_WORDS = ("price", "plan", "churn", "switch", "competitor", "renew", "contract", "seat")
 MEME_TITLES = {"lol", "meme", "joke", "lmao"}
@@ -11,7 +12,13 @@ MIN_COMMENTS = 3
 CAP = 8
 
 
-def filter_items(items: list[dict], *, now: datetime | None = None, category: str = "saas") -> list[dict]:
+def filter_items(
+    items: list[dict],
+    *,
+    now: datetime | None = None,
+    category: str = "saas",
+    product: str = "",
+) -> list[dict]:
     clock = now or datetime.now(timezone.utc)
     kept: list[dict] = []
     seen_urls: set[str] = set()
@@ -20,9 +27,13 @@ def filter_items(items: list[dict], *, now: datetime | None = None, category: st
             continue
         if str(item.get("subreddit", "")).lower() == "all":
             continue
-        if int(item.get("score") or 0) < MIN_SCORE:
+        if item.get("source") == "web":
+            min_score, min_comments = 1, 0
+        else:
+            min_score, min_comments = MIN_SCORE, MIN_COMMENTS
+        if int(item.get("score") or 0) < min_score:
             continue
-        if int(item.get("num_comments") or 0) < MIN_COMMENTS:
+        if int(item.get("num_comments") or 0) < min_comments:
             continue
         created = datetime.fromtimestamp(float(item["created_utc"]), tz=timezone.utc)
         if (clock - created).days > MAX_AGE_DAYS:
@@ -31,7 +42,13 @@ def filter_items(items: list[dict], *, now: datetime | None = None, category: st
         if title in MEME_TITLES:
             continue
         blob = f"{title} {item.get('text', '')}".lower()
-        if category.lower() not in blob and category.lower() not in str(item.get("subreddit", "")).lower():
+        subreddit = str(item.get("subreddit", "")).lower()
+        product_key = product.strip().lower()
+        if product_key:
+            token = re.compile(rf"\b{re.escape(product_key)}\b")
+            if not token.search(title) and not token.search(subreddit):
+                continue
+        elif category.strip() and category.lower() not in blob and category.lower() not in subreddit:
             continue
         if not any(word in blob for word in DECISION_WORDS):
             continue

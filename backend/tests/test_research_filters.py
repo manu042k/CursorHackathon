@@ -39,7 +39,10 @@ def test_drops_low_score_and_old_and_meme():
     assert filter_items(items, now=NOW) == []
 
 
-def test_caps_at_eight_per_source():
+def test_keeps_when_product_name_matches():
+    item = _item(subreddit="productivity", title="Notion price hike", text="We might switch plans.")
+    kept = filter_items([item], now=NOW, category="saas", product="Notion")
+    assert len(kept) == 1
     items = [_item(url=f"https://reddit.com/r/saas/{i}", text=f"SaaS price plan {i} switch") for i in range(20)]
     kept = filter_items(items, now=NOW)
     assert len(kept) <= 8

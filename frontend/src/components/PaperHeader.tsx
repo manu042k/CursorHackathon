@@ -3,14 +3,20 @@ import type { ExperimentPaper } from "@/types/contracts";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function PaperHeader({ paper }: { paper: ExperimentPaper }) {
-  const base = paper.experiment.current_price;
-  const forked = forkedPrice(base, paper.experiment.variable_delta);
+  const kind = paper.experiment.variable_type;
+  const delta = paper.experiment.variable_delta;
+  let title = `${kind} ${delta}`;
+  if (kind === "price_change") {
+    const forked = forkedPrice(paper.experiment.current_price, delta);
+    title = `Baseline $${paper.experiment.current_price} vs ${delta} → $${forked}`;
+  } else if (kind === "competitor_entry") {
+    const forked = forkedPrice(paper.experiment.competitor_price, delta);
+    title = `Rival $${paper.experiment.competitor_price} vs ${delta} → $${forked}`;
+  }
   return (
     <header className="space-y-1">
       <p className="text-sm text-muted-foreground">Finding</p>
-      <h1 className="text-3xl font-semibold tracking-tight">
-        Baseline ${base} vs {paper.experiment.variable_delta} → ${forked}
-      </h1>
+      <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
     </header>
   );
 }

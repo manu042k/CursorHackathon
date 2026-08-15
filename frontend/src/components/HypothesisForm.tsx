@@ -16,6 +16,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { RosterConfirm } from "@/components/RosterConfirm";
 import { ApiDownError, createExperiment, getExperiment, getHealth, startExperiment, waitRosterReady } from "@/lib/api";
@@ -25,17 +32,25 @@ import type {
   DecisionEvent,
   Roster,
   RoundCompleteEvent,
+  VariableType,
 } from "@/types/contracts";
+import { VARIABLE_TYPES } from "@/types/contracts";
 import { forkedPrice, hypothesisSentence } from "@/lib/price";
 import { subscribeExperimentEvents } from "@/lib/sse";
 
 const METHOD = {
   market_size: 30,
   competitor_count: 1,
-  variable_type: "price_change" as const,
   adapter: "fixture" as Adapter,
   random_seed: 42,
   buyer_price_sensitivity: "medium" as const,
+};
+
+const DELTA_HINT: Record<VariableType, string> = {
+  price_change: "+20%",
+  competitor_entry: "-20%",
+  marketing_spend: "+20%",
+  feature_change: "cut search",
 };
 
 function clampRounds(value: number): number {
@@ -53,6 +68,7 @@ export function HypothesisForm() {
   const [productDescription, setProductDescription] = useState("");
   const [currentPrice, setCurrentPrice] = useState("");
   const [competitorPrice, setCompetitorPrice] = useState("");
+  const [variableType, setVariableType] = useState<VariableType>("price_change");
   const [delta, setDelta] = useState("");
   const [fromRound, setFromRound] = useState("");
   const [rounds, setRounds] = useState(4);
@@ -107,11 +123,21 @@ export function HypothesisForm() {
   const roundN = clampRound(Number.parseInt(fromRound, 10), rounds);
   const adapter: Adapter = cursorReady ? "cursor" : METHOD.adapter;
   const sentence = useMemo(() => {
-    if (!productName.trim() || !Number.isFinite(price) || !delta.trim()) {
-      return "Name the product and the one price change.";
+    if (!productName.trim() || !delta.trim()) {
+      return "Name the product and the one change.";
     }
-    return hypothesisSentence(productName.trim(), price, delta.trim(), roundN);
-  }, [productName, price, delta, roundN]);
+    if (!Number.isFinite(price)) {
+      return "Name the product and the one change.";
+    }
+    return hypothesisSentence(
+      productName.trim(),
+      price,
+      delta.trim(),
+      roundN,
+      variableType,
+      Number.parseFloat(competitorPrice)
+    );
+  }, [productName, price, delta, roundN, variableType, competitorPrice]);
 
   function resetToForm() {
     setError(null);
@@ -149,7 +175,7 @@ export function HypothesisForm() {
       buyer_price_sensitivity: METHOD.buyer_price_sensitivity,
       rounds: clampRounds(rounds),
       random_seed: METHOD.random_seed,
-      variable_type: METHOD.variable_type,
+      variable_type: variableType,
       variable_delta: delta.trim(),
       applies_from_round: roundN,
       adapter,
@@ -307,9 +333,24 @@ export function HypothesisForm() {
           <CardDescription>Only this differs between Run A (baseline) and Run B.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Type: <span className="font-medium text-foreground">price_change</span>
-          </p>
+          <div className="space-y-2">
+            <Label htmlFor="variable_type">Type</Label>
+            <Select
+              value={variableType}
+              onValueChange={(value) => setVariableType(value as VariableType)}
+            >
+              <SelectTrigger id="variable_type" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {VARIABLE_TYPES.map((kind) => (
+                  <SelectItem key={kind} value={kind}>
+                    {kind}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="variable_delta">Delta</Label>
@@ -318,7 +359,7 @@ export function HypothesisForm() {
                 name="variable_delta"
                 value={delta}
                 onChange={(e) => setDelta(e.target.value)}
-                placeholder="+20%"
+                placeholder={DELTA_HINT[variableType]}
                 required
               />
             </div>

@@ -124,7 +124,9 @@ def test_rejects_rounds_outside_3_to_8_and_unknown_variable(tmp_path, monkeypatc
     assert client.post("/experiments", json={**PAYLOAD, "rounds": 2}).status_code == 422
     assert client.post("/experiments", json={**PAYLOAD, "rounds": 9}).status_code == 422
     assert client.post("/experiments", json={**PAYLOAD, "rounds": 7}).status_code == 202
-    bad_var = {**PAYLOAD, "variable_type": "marketing_spend"}
+    for kind in ("price_change", "competitor_entry", "marketing_spend", "feature_change"):
+        assert client.post("/experiments", json={**PAYLOAD, "variable_type": kind}).status_code == 202
+    bad_var = {**PAYLOAD, "variable_type": "ad_auction"}
     assert client.post("/experiments", json=bad_var).status_code == 422
 
 

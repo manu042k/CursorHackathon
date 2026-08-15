@@ -2,7 +2,11 @@
 
 export type RunId = "A" | "B";
 export type Adapter = "cursor" | "fixture";
-export type VariableType = "price_change";
+export type VariableType =
+  | "price_change"
+  | "competitor_entry"
+  | "marketing_spend"
+  | "feature_change";
 export type BuyerDecision = "stay" | "churn" | "switch";
 export type CompetitorDecision = "hold" | "undercut" | "match";
 export type Status =
@@ -17,7 +21,12 @@ export type Status =
 export type PriceSensitivity = "low" | "medium" | "high";
 export type Runtime = "local";
 
-export const ADAPTERS = ["cursor", "fixture"] as const satisfies readonly Adapter[];
+export const VARIABLE_TYPES = [
+  "price_change",
+  "competitor_entry",
+  "marketing_spend",
+  "feature_change",
+] as const satisfies readonly VariableType[];
 export const STATUSES = [
   "created",
   "researching",
