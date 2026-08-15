@@ -5,7 +5,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class FrozenModel(BaseModel):
@@ -65,12 +65,18 @@ class CreateExperimentRequest(FrozenModel):
     competitor_count: int
     competitor_price: float
     buyer_price_sensitivity: PriceSensitivity
-    rounds: Literal[4, 8] = 4
+    rounds: int = Field(default=4, ge=3, le=8)
     random_seed: int
     variable_type: VariableType
     variable_delta: str
     applies_from_round: int
     adapter: Adapter
+
+    @model_validator(mode="after")
+    def applies_from_round_in_range(self) -> "CreateExperimentRequest":
+        if self.applies_from_round < 1 or self.applies_from_round > self.rounds:
+            raise ValueError("applies_from_round must be in 1..rounds")
+        return self
 
 
 class CreateExperimentResponse(FrozenModel):

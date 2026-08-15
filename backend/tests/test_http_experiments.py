@@ -90,14 +90,23 @@ def test_get_202_while_running(tmp_path, monkeypatch):
     assert done.status_code == 200
 
 
-def test_rejects_rounds_not_eight_and_unknown_variable(tmp_path, monkeypatch):
+def test_rejects_rounds_outside_3_to_8_and_unknown_variable(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     app.state.registry = ExperimentRegistry()
     client = TestClient(app)
-    bad_rounds = {**PAYLOAD, "rounds": 7}
-    assert client.post("/experiments", json=bad_rounds).status_code == 422
+    assert client.post("/experiments", json={**PAYLOAD, "rounds": 2}).status_code == 422
+    assert client.post("/experiments", json={**PAYLOAD, "rounds": 9}).status_code == 422
+    assert client.post("/experiments", json={**PAYLOAD, "rounds": 7}).status_code == 202
     bad_var = {**PAYLOAD, "variable_type": "marketing_spend"}
     assert client.post("/experiments", json=bad_var).status_code == 422
+
+
+def test_rejects_applies_from_round_past_rounds(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    app.state.registry = ExperimentRegistry()
+    client = TestClient(app)
+    body = {**PAYLOAD, "rounds": 4, "applies_from_round": 5}
+    assert client.post("/experiments", json=body).status_code == 422
 
 
 def test_openapi_docs_available():

@@ -46,7 +46,8 @@ export interface CreateExperimentRequest {
   competitor_count: number;
   competitor_price: number;
   buyer_price_sensitivity: PriceSensitivity;
-  rounds: 4 | 8;
+  /** Integer 3–8 inclusive. Default 4. Golden Grok Bot paper stays 8. */
+  rounds: number;
   random_seed: number;
   variable_type: VariableType;
   variable_delta: string;
