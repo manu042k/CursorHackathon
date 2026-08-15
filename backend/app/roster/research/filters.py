@@ -27,17 +27,16 @@ def filter_items(
             continue
         if str(item.get("subreddit", "")).lower() == "all":
             continue
-        if item.get("source") == "web":
-            min_score, min_comments = 1, 0
-        else:
-            min_score, min_comments = MIN_SCORE, MIN_COMMENTS
-        if int(item.get("score") or 0) < min_score:
+        score = item.get("score")
+        comments = item.get("num_comments")
+        if score is not None and int(score) < MIN_SCORE:
             continue
-        if int(item.get("num_comments") or 0) < min_comments:
+        if comments is not None and int(comments) < MIN_COMMENTS:
             continue
-        created = datetime.fromtimestamp(float(item["created_utc"]), tz=timezone.utc)
-        if (clock - created).days > MAX_AGE_DAYS:
-            continue
+        if item.get("created_utc") is not None:
+            created = datetime.fromtimestamp(float(item["created_utc"]), tz=timezone.utc)
+            if (clock - created).days > MAX_AGE_DAYS:
+                continue
         title = str(item.get("title") or "").strip().lower()
         if title in MEME_TITLES:
             continue
