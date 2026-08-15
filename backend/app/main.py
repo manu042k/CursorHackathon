@@ -28,6 +28,7 @@ from app.contracts import (
 )
 from app import settings
 from app.cursor_client import cursor_lifespan
+from app.ledger import InMemoryLedger, PostgresLedger
 from app.paper import paper_from_disk, paper_from_result
 from app.registry import ExperimentRegistry
 from app.store import (
@@ -78,6 +79,21 @@ def _execute(experiment_id: str, body: CreateExperimentRequest) -> None:
     def on_decision(payload):
         registry.append_event(experiment_id, "decision", payload)
 
+    # Construct ledger
+    ledger = None
+    if settings.DATABASE_URL:
+        try:
+            import psycopg
+            conn = psycopg.connect(settings.DATABASE_URL)
+            ledger = PostgresLedger(conn)
+        except Exception as exc:
+            registry.set_status(experiment_id, Status.failed)
+            registry.errors[experiment_id] = f"database connection failed: {exc}"
+            registry.append_event(experiment_id, "failed", {"error": f"database: {exc}"})
+            return
+    else:
+        ledger = InMemoryLedger()
+
     try:
         result = asyncio.run(
             run_twin(
@@ -86,6 +102,7 @@ def _execute(experiment_id: str, body: CreateExperimentRequest) -> None:
                 _adapter_for(body),
                 on_round=on_round,
                 on_decision=on_decision,
+                ledger=ledger,
             )
         )
         registry.set_status(

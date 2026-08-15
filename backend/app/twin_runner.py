@@ -19,6 +19,7 @@ from app.contracts import (
     VariableType,
 )
 from app.history import history_summary
+from app.ledger import Ledger
 from app.market import Market, market_from_roster, parse_price_delta
 from app.roster.fixed_grok_bot import build_roster
 from app.store import write_artifact
@@ -93,6 +94,7 @@ async def _run_one(
     call_order: list[tuple[str, str, int]],
     on_round: OnRound | None,
     on_decision: OnDecision | None,
+    ledger: Ledger | None,
 ) -> dict[str, Any]:
     order = observation_order(roster)
     trajectory: list[dict[str, float | int]] = []
@@ -123,6 +125,27 @@ async def _run_one(
             call_order.append((run_id.value, agent_id, round_n))
             decision = await decide_validated(adapter, request)
             decisions[agent_id] = decision
+            if ledger is not None:
+                ledger.append(
+                    experiment_id,
+                    "agent.observed",
+                    run_id=run_id.value,
+                    round=round_n,
+                    agent_id=agent_id,
+                    payload=request.model_dump(mode="json"),
+                )
+                ledger.append(
+                    experiment_id,
+                    "agent.decided",
+                    run_id=run_id.value,
+                    round=round_n,
+                    agent_id=agent_id,
+                    payload={
+                        "decision": decision.decision,
+                        "reason": decision.reason,
+                        "confidence": decision.confidence,
+                    },
+                )
             agent_logs.append(
                 AgentLog(
                     round=round_n,
@@ -184,6 +207,7 @@ async def run_twin(
     root: Path | None = None,
     on_round: OnRound | None = None,
     on_decision: OnDecision | None = None,
+    ledger: Ledger | None = None,
 ) -> TwinResult:
     if experiment.variable_type != VariableType.price_change:
         raise ValueError("only price_change is supported")
@@ -209,6 +233,7 @@ async def run_twin(
         call_order=call_order,
         on_round=on_round,
         on_decision=on_decision,
+        ledger=ledger,
     )
     write_artifact(experiment_id, "run_a", run_a, root=root)
 
@@ -223,6 +248,7 @@ async def run_twin(
         call_order=call_order,
         on_round=on_round,
         on_decision=on_decision,
+        ledger=ledger,
     )
     write_artifact(experiment_id, "run_b", run_b, root=root)
 
