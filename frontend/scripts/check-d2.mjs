@@ -10,8 +10,8 @@ const finding = fs.readFileSync(path.join(root, "src/components/FindingPaper.tsx
 const css = fs.readFileSync(path.join(root, "src/app/paper.css"), "utf8");
 
 const checks = [
-  [chart.includes("Share (%)"), "share toggle"],
-  [chart.includes("MRR ($)"), "mrr toggle"],
+  [chart.includes('metric="share"'), "share figure"],
+  [chart.includes('metric="mrr"'), "mrr figure"],
   [chart.includes("Run A · $"), "series name A"],
   [chart.includes("Run B · $"), "series name B"],
   [chart.includes("applies_from_round"), "intervention marker"],

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, type KeyboardEvent } from "react";
-import { TrajectoryChart, type ChartMetric } from "@/components/TrajectoryChart";
+import { type KeyboardEvent } from "react";
+import { TrajectoryChart } from "@/components/TrajectoryChart";
 import { forkedPrice } from "@/lib/price";
 import type { ExperimentPaper } from "@/types/contracts";
 
@@ -12,12 +12,10 @@ type Props = {
 };
 
 export function TwinChart({ paper, selectedRound, onSelectRound }: Props) {
-  const [metric, setMetric] = useState<ChartMetric>("share");
-  const seriesA = metric === "share" ? paper.metrics.share_a : paper.metrics.mrr_a;
-  const seriesB = metric === "share" ? paper.metrics.share_b : paper.metrics.mrr_b;
   const base = paper.experiment.current_price;
   const forked = forkedPrice(base, paper.experiment.variable_delta);
-  const rounds = seriesA.map((_, i) => i + 1);
+  const totalRounds = paper.experiment.rounds;
+  const rounds = paper.metrics.share_a.map((_, i) => i + 1);
 
   function onKey(event: KeyboardEvent<HTMLElement>) {
     if (event.key === "ArrowLeft") {
@@ -26,7 +24,7 @@ export function TwinChart({ paper, selectedRound, onSelectRound }: Props) {
     }
     if (event.key === "ArrowRight") {
       event.preventDefault();
-      onSelectRound(Math.min(seriesA.length, selectedRound + 1));
+      onSelectRound(Math.min(totalRounds, selectedRound + 1));
     }
   }
 
@@ -39,32 +37,27 @@ export function TwinChart({ paper, selectedRound, onSelectRound }: Props) {
           <span className="twin-chart__swatch twin-chart__swatch--b" />
           Run B · ${forked}
         </p>
-        <div className="twin-chart__toggle" role="tablist">
-          <button
-            type="button"
-            className={metric === "share" ? "is-active" : ""}
-            onClick={() => setMetric("share")}
-          >
-            Share (%)
-          </button>
-          <button
-            type="button"
-            className={metric === "mrr" ? "is-active" : ""}
-            onClick={() => setMetric("mrr")}
-          >
-            MRR ($)
-          </button>
-        </div>
       </div>
-      <TrajectoryChart
-        seriesA={seriesA}
-        seriesB={seriesB}
-        selectedRound={selectedRound}
-        onSelectRound={onSelectRound}
-        appliesFromRound={paper.experiment.applies_from_round}
-        metric={metric}
-        totalRounds={seriesA.length || 4}
-      />
+      <div className="twin-chart__figures">
+        <TrajectoryChart
+          metric="share"
+          seriesA={paper.metrics.share_a}
+          seriesB={paper.metrics.share_b}
+          selectedRound={selectedRound}
+          onSelectRound={onSelectRound}
+          appliesFromRound={paper.experiment.applies_from_round}
+          totalRounds={totalRounds}
+        />
+        <TrajectoryChart
+          metric="mrr"
+          seriesA={paper.metrics.mrr_a}
+          seriesB={paper.metrics.mrr_b}
+          selectedRound={selectedRound}
+          onSelectRound={onSelectRound}
+          appliesFromRound={paper.experiment.applies_from_round}
+          totalRounds={totalRounds}
+        />
+      </div>
       <div className="round-pills" role="list">
         {rounds.map((round) => (
           <button

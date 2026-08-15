@@ -8,6 +8,8 @@ import { AttributionBar } from "@/components/AttributionBar";
 import { ReasonTrace } from "@/components/ReasonTrace";
 import { RosterPreview } from "@/components/RosterPreview";
 import { TwinChart } from "@/components/TwinChart";
+import { PersonaOutcomes } from "@/components/PersonaOutcomes";
+import { CompetitorPath } from "@/components/CompetitorPath";
 import { Button } from "@/components/ui/button";
 import { firstMajorRound } from "@/lib/rounds";
 import type { ExperimentPaper } from "@/types/contracts";
@@ -38,6 +40,8 @@ export function FindingPaper({ paper }: { paper: ExperimentPaper }) {
         selectedRound={selectedRound}
         onSelectRound={setSelectedRound}
       />
+      <PersonaOutcomes paper={paper} />
+      <CompetitorPath paper={paper} />
       <AttributionBar paper={paper} selectedRound={selectedRound} />
       <ReasonTrace
         paper={paper}
