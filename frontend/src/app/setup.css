@@ -97,6 +97,48 @@
   font-size: var(--text-body);
 }
 
+.run-progress {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--space-section) var(--space-xl);
+}
+
+.run-progress__now {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  font-family: var(--font-mono);
+  letter-spacing: 0.28px;
+}
+
+.run-progress__cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-xxl);
+  margin-top: var(--space-xl);
+}
+
+.run-progress__cols h2 {
+  font-size: var(--text-feature);
+  font-weight: 400;
+}
+
+.run-progress__cols ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.run-progress__cols li {
+  color: var(--color-muted);
+  border-bottom: 1px solid var(--color-hairline);
+  padding: var(--space-sm) 0;
+}
+
+.run-progress__cols li.is-filled {
+  color: var(--color-ink);
+}
+
 @media (max-width: 800px) {
   .setup {
     grid-template-columns: 1fr;

@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ButtonPrimary } from "@/components/ButtonPrimary";
 import { Receipt } from "@/components/Receipt";
+import { RunProgress } from "@/components/RunProgress";
 import { ApiDownError, createExperiment } from "@/lib/api";
 import { hypothesisSentence } from "@/lib/price";
-import type { CreateExperimentRequest } from "@/types/contracts";
+import { subscribeExperimentEvents } from "@/lib/sse";
+import type { CreateExperimentRequest, RoundCompleteEvent } from "@/types/contracts";
 
 const ACME: CreateExperimentRequest = {
   product_name: "Acme Analytics",
@@ -32,9 +35,22 @@ export function HypothesisForm() {
   const [delta, setDelta] = useState(ACME.variable_delta);
   const [fromRound, setFromRound] = useState(String(ACME.applies_from_round));
   const seed = ACME.random_seed;
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [startedId, setStartedId] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [ticks, setTicks] = useState<RoundCompleteEvent[]>([]);
+  const [failed, setFailed] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!startedId) return;
+    const stop = subscribeExperimentEvents(startedId, {
+      onRound: (event) => setTicks((prev) => [...prev, event]),
+      onComplete: (id) => router.push(`/experiments/${id}`),
+      onFailed: (message) => setFailed(message),
+    });
+    return stop;
+  }, [startedId, router]);
 
   const price = Number.parseFloat(currentPrice) || 0;
   const roundN = Number.parseInt(fromRound, 10) || 1;
@@ -47,6 +63,8 @@ export function HypothesisForm() {
     event.preventDefault();
     setError(null);
     setStartedId(null);
+    setTicks([]);
+    setFailed(null);
     setPending(true);
     const body: CreateExperimentRequest = {
       ...ACME,
@@ -74,6 +92,10 @@ export function HypothesisForm() {
     }
   }
 
+  if (startedId) {
+    return <RunProgress ticks={ticks} failed={failed} />;
+  }
+
   return (
     <form className="setup" onSubmit={onSubmit}>
       <div className="setup__story">
@@ -94,9 +116,6 @@ export function HypothesisForm() {
               Open the prepared Acme paper
             </Link>
           </p>
-        ) : null}
-        {startedId ? (
-          <p className="setup__started">Experiment {startedId} created. Waiting for the paper.</p>
         ) : null}
       </div>
       <div className="setup__fields">
