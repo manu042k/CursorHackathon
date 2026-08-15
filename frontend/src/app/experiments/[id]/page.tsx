@@ -1,15 +1,16 @@
-import { Receipt } from "@/components/Receipt";
-import type { Receipt as ReceiptModel } from "@/types/contracts";
+import { FindingPaper } from "@/components/FindingPaper";
 import paper from "@/data/acme-seed-42.json";
+import type { ExperimentPaper } from "@/types/contracts";
+import "../paper.css";
 
 export default function ExperimentPaperPage({ params }: { params: { id: string } }) {
-  const receipt =
-    params.id === "acme-seed-42" ? (paper.receipt as ReceiptModel) : undefined;
-  return (
-    <main className="shell-main">
-      <p className="shell-kicker">Finding</p>
-      <h1 className="shell-headline">{params.id}</h1>
-      <Receipt receipt={receipt} />
-    </main>
-  );
+  if (params.id !== "acme-seed-42") {
+    return (
+      <main className="shell-main">
+        <p className="shell-kicker">Finding</p>
+        <h1 className="shell-headline">{params.id}</h1>
+      </main>
+    );
+  }
+  return <FindingPaper paper={paper as unknown as ExperimentPaper} />;
 }

@@ -1,0 +1,71 @@
+.finding {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--space-section) var(--space-xl);
+}
+
+.paper-header__kicker {
+  margin: 0 0 var(--space-md);
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  letter-spacing: 0.28px;
+  color: var(--color-muted);
+}
+
+.paper-header__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(32px, 5vw, 48px);
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.finding__narrative {
+  margin: var(--space-xl) 0;
+  font-size: var(--text-body-lg);
+  line-height: 1.4;
+  max-width: 40rem;
+}
+
+.metric-cards {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-xl);
+  padding: 0;
+  margin: 0 0 var(--space-section);
+}
+
+.metric-cards__item {
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--color-hairline);
+  padding-top: var(--space-lg);
+}
+
+.metric-cards__value {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-card);
+  letter-spacing: -0.02em;
+}
+
+.metric-cards__verb {
+  margin: var(--space-xs) 0 0;
+  color: var(--color-slate);
+}
+
+.metric-cards__item--danger .metric-cards__value {
+  color: var(--color-error);
+}
+
+.metric-cards__item--success .metric-cards__value {
+  color: var(--color-deep-green);
+}
+
+@media (max-width: 700px) {
+  .metric-cards {
+    grid-template-columns: 1fr;
+  }
+}
