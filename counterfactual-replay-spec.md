@@ -61,8 +61,8 @@ Path from demo to software a CFO would run twice: today a working causal experim
 
 If you can delete the model and still demo the app, you built a dashboard on fake data. The model must do three jobs a rules engine cannot:
 
-1. **Roster composition** — a B2B analytics tool and a consumer subscription box produce different market participants. Show two rosters side by side.
-2. **Situated decisions** — each buyer reasons from willingness-to-pay, loyalty, and the competitor’s price — not a hardcoded threshold table.
+1. **Roster composition** — category research proposes 5 user personas + 1 competitor + 1 analyst. A B2B tool and a consumer box must not get the same five labels.
+2. **Situated decisions** — each user reasons from a frozen reaction playbook (how that category talks about product decisions) plus WTP, loyalty, and precomputed prices/gaps — not a hardcoded threshold table.
 3. **Grounded narrative** — end summary is assembled from logged reasons. If a sentence cannot be cited to an agent-round, it does not ship.
 
 **Implementation binding:** live decisions are Cursor local agents via the Python SDK (`cursor-sdk`, `AsyncAgent.prompt`). See [`architecture.md`](architecture.md) ADR-7. The browser never holds `CURSOR_API_KEY`.
@@ -71,31 +71,34 @@ If you can delete the model and still demo the app, you built a dashboard on fak
 
 ## 3. What we are actually building (scope for one day)
 
-A single web app (Next.js or plain React + FastAPI backend) with:
+A single web app (Next.js + FastAPI backend) with:
 
-1. A setup screen — define the product/market and the one variable to test.
-2. A simulation engine — N agents, run for R rounds, twice (baseline + counterfactual), same seed.
-3. A causal attribution layer — per-round, per-agent contribution to the divergence.
-4. A dashboard — two trajectories, a divergence chart, and a click-through reasoning trace.
+1. A setup screen — the **business owner** defines the product and the one variable to test, and chooses **rounds** (3–8, default 4).
+2. A research step — background agents propose **5 user personas, 1 competitor, 1 analyst** from category social patterns. The owner **confirms** before the twin run. There is no business-agent persona.
+3. A simulation engine — confirmed roster, N rounds, twice (baseline + counterfactual), same seed. Users decide in parallel on snapshot S0; competitor decides separately on S1. Arithmetic is computed in the engine and handed in.
+4. A causal attribution layer — per-round, per-agent contribution to the divergence. Every event is logged.
+5. A paper — share and MRR figures, persona outcomes, competitor path, attribution bar, click-through reasons.
 
-**Hard scope limits (do not exceed on hackathon day):**
-- 3 agent personas. Not 5, not 10.
-- 8 simulation rounds.
+**Hard scope limits:**
+- 5 user personas + 1 competitor + 1 analyst. Not a business agent. Not 30 live buyers.
+- Rounds tunable **3–8**, default **4**. Grok Bot fixture paper stays 8.
 - 1 variable changed between runs. Never more than one — this is the whole point.
 - 1 real-ish product/market seed, prepared in advance (don't improvise it live).
+- Token caps on every agent call. No live social fetch during rounds.
 
 ### 3.1 Must-ship vs skip without guilt
 
 | Item | Call | Reason |
 |---|---|---|
-| Fixed 3-role roster, 8 rounds, 1 intervention | **Must** | The causal claim needs a complete pipeline, not a richer market. |
-| Divergence chart + attribution bars | **Must** | This is the figure in the paper. No figure, no pitch. |
+| Fixed 5+1+1 roster catalogue, tunable rounds, 1 intervention | **Must** | The causal claim needs a complete pipeline, not a richer market. |
+| Divergence figures (share **and** MRR) + attribution bars | **Must** | This is the figure in the paper. No figure, no pitch. |
+| Persona outcomes + competitor path | **Must** (this revision) | The owner has to see who moved and how the competitor reacted. |
 | Click-through reason trace | **Must** | This is how you answer “is the model actually deciding.” |
 | Intervention receipt panel | **Must** | Cheap to build, does the rhetorical work of the whole method. |
 | Worked Grok Bot fixture, seed 42 | **Must** | Do not improvise live. Sanity-check the “share down, MRR up” shape before demo. |
-| Generated roster from product text | **Only if pipeline is solid** | Best differentiator after the engine works. Two products, two rosters. |
+| Research → confirm roster | **This revision** | Category playbooks, frozen once. Two products, two rosters. |
 | Leave-one-out / Shapley attribution | **Skip** | Say it as the “if we had more time” answer. Decision-diff is enough today. |
-| Historical calibration | **Skip** | This is the real company. Do not pretend a CSV upload on hackathon day. |
+| Historical calibration / live social during rounds | **Skip** | Research once. Do not pretend a CSV upload or a scrape mid-run. |
 | Four intervention types live | **Skip** | One beautiful price-change demo beats four shallow ones. |
 
 ---
@@ -113,7 +116,7 @@ A single web app (Next.js or plain React + FastAPI backend) with:
 | `competitor_count` | integer | 1–2 |
 | `competitor_price` | number | 100 |
 | `buyer_price_sensitivity` | enum: low / medium / high | medium |
-| `rounds` | integer, fixed at 8 for the demo | 8 |
+| `rounds` | integer 3–8, default 4 (Grok Bot fixture stays 8) | 4 |
 | `random_seed` | integer, locked and reused across both runs | 42 |
 
 ### 4.2 The intervention (the one variable being tested)
@@ -124,48 +127,45 @@ A single web app (Next.js or plain React + FastAPI backend) with:
 | `variable_delta` | number or %, the single change applied | "+20%" |
 | `applies_from_round` | integer, which round the change takes effect | 1 |
 
-This is deliberately the entire input surface. Everything else (agent count, persona definitions, round count) is fixed by you ahead of time so the demo is reliable, not user-configurable live. Demo only `price_change`. The other enum values are product language, not day-one surface area.
+This is deliberately a small input surface. Roster composition is **researched and confirmed**, not typed by the owner. Round count **is** owner-tunable; it is not the intervened variable (both runs use the same N). Demo only `price_change`. The other enum values are product language, not day-one surface area.
 
 ---
 
-## 5. Agent roster — generated from the product, not hardcoded
+## 5. Agent roster — researched from the category, frozen once
 
-Don't hardcode "buyer, competitor, analyst" as fixed roles. Generate the roster from the product description itself, so a B2B SaaS tool and a consumer subscription box produce genuinely different market participants. This is a differentiator worth demoing on its own — the roster composition is evidence Grok 4.6 understood the product, before the simulation even runs.
+Don't hardcode "buyer, competitor, analyst" as opaque role strings. **Do** hardcode the **catalogue**: three classes (`buyer`, `competitor`, `analyst`) and a small set of buyer archetypes. Research fills *instances* (WTP, playbook, evidence), not new classes.
 
-### 5.0 Persona-generation step (runs once, before the twin simulation)
+There is **no business-agent persona**. The business owner is the platform user; they pick the one action.
 
-One Grok 4.6 call, given `product_name` + `product_description` + `market_size`, returns a structured roster:
+### 5.0 Research + confirm (runs once, before the twin simulation)
 
-```json
-{
-  "agent_roles": [
-    { "role": "price_sensitive_buyer", "count": 12, "traits": { "willingness_to_pay_range": [35,55], "loyalty": "low" } },
-    { "role": "enterprise_buyer", "count": 5, "traits": { "willingness_to_pay_range": [60,90], "loyalty": "high" } },
-    { "role": "incumbent_competitor", "count": 1, "traits": { "current_price": 45 } },
-    { "role": "channel_partner", "count": 1, "traits": { "influence": "medium" } }
-  ]
-}
-```
+Background research agents, given `product_name` + `product_description` + prices + `market_size`, return a proposed roster:
 
-**Determinism requirement (critical):** this call is seeded and run once at setup. Store the resulting roster as a frozen JSON artifact and feed the identical roster into both run A and run B. The dynamism is in *what gets generated per product* — not in varying between the two runs of the same product. Generate once, freeze, reuse. Breaking this rule breaks the causal claim in §6.1.
+- exactly **5 user (buyer) personas** covering at least 3 archetypes (`price_sensitive`, `loyalist`, `value_seeker`, `enterprise`, `churn_risk`)
+- **1 competitor**
+- **1 analyst** (meta, weight 0)
 
-Within each role, individual agent trait values (exact willingness-to-pay, exact loyalty score) are then sampled from the role's stated range using the same locked seed — same two-step pattern as before: generate once, freeze, reuse across both runs.
+Each buyer carries a **reaction playbook**: how someone in that category on social media would react to a price hike, a cheaper competitor, a feature cut — mapped onto `stay` / `churn` / `switch`. Evidence is a short paraphrase, not a live feed.
 
-**Build order for this feature:** get the fixed-role pipeline (§5.1 below) working end to end first — full twin-run, attribution, and trace all working. Only then swap the hardcoded role list for the generated one. A hardcoded roster with a solid working pipeline beats a broken dynamic-roster pipeline. Budget this as a late-addition, not a foundation.
+The owner **confirms** the roster. Then it is hashed and fed identically into Run A and Run B.
 
-### 5.1 Default fixed roster (build this first, 3 roles)
+**Determinism requirement (critical):** research is seeded and run once. Breaking generate-once / freeze / reuse breaks the causal claim in §6.1. Do not fetch social networks during rounds.
+
+Within each archetype, individual trait values (exact WTP, loyalty) are sampled with the locked seed — same two-step pattern: generate once, freeze, reuse.
+
+**Build order:** the fixed Grok Bot pipeline (§5.1) already works end to end. This revision swaps in research → confirm, then parallel users + competitor on S1. A confirmed fixture roster with a solid pipeline beats a scrape mid-run.
+
+### 5.1 Default fixed roster (Grok Bot fixture)
 
 | Agent | Observes each round | Decides |
 |---|---|---|
-| **Buyer agent(s)** — instantiate 3–5 with different price-sensitivity thresholds | current price, competitor price, own "willingness to pay" | stay subscribed / churn / switch to competitor |
-| **Competitor agent** | your price, market share trend | hold price / undercut / match |
-| **Analyst agent** (meta-agent, not a market participant) | full round history | flags anomalies, writes the one-line causal note per divergence point |
+| **Buyer agent(s)** — 5 weighted instances | S0: playbook, WTP, precomputed `wtp_gap`, prices, status | stay / churn / switch |
+| **Competitor agent** | **S1** after users applied: your price, new share | hold / undercut / match |
+| **Analyst agent** (meta, not a market participant) | full round history | flags anomalies; weight 0 |
 
-Once §5.0 is wired in, these three roles become the *default* roster returned for a generic SaaS product — the generated roster for other product types will differ (see example above). The per-round I/O contract in §5.2 below stays identical regardless of which roles are active; only the persona content changes.
+Buyer agents run **in parallel** on S0. Competitor runs **separately** after user decisions are applied. Engine arithmetic (share, MRR, WTP gap) is handed in; agents must not recompute it. Unchanged observation fields are byte-identical across A and B.
 
-Each buyer agent is a separate Grok 4.6 call (or a batched call returning an array) with its own persona (e.g. "price-sensitive, willingness to pay $52" vs "loyal, willingness to pay $70"). This is what makes the population feel real rather than monolithic.
-
-Spread willingness-to-pay so $144 sits **inside** the distribution, not above all of it. The plot of the demo is the 3–5 buyers who sit between $120 and $144. That band is what produces divergence instead of collapse or a flat line.
+Spread willingness-to-pay so $144 sits **inside** the distribution, not above all of it. The plot of the demo is the buyers who sit between $120 and $144.
 
 ### 5.2 Per-round agent I/O contract (this is what you code first)
 
@@ -174,14 +174,22 @@ Spread willingness-to-pay so $144 sits **inside** the distribution, not above al
 {
   "round": 4,
   "your_persona": {
-    "willingness_to_pay": 52,
+    "class": "buyer",
+    "archetype": "price_sensitive",
+    "willingness_to_pay": 128,
     "loyalty_score": 0.3,
-    "price_sensitivity": "high"
+    "price_sensitivity": "high",
+    "wtp_gap": 16,
+    "voice": "complains in public, compares screenshots, leaves fast",
+    "reaction_playbook": {
+      "price_hike": "switch_if_above_wtp",
+      "competitor_cheaper": "amplify_and_switch"
+    }
   },
-  "current_price": 59,
-  "competitor_price": 45,
+  "current_price": 144,
+  "competitor_price": 100,
   "your_status": "subscribed",
-  "history_summary": "Price rose from $49 to $59 at round 1."
+  "history_summary": "Price rose from $120 to $144 at round 1."
 }
 ```
 
@@ -194,7 +202,7 @@ Spread willingness-to-pay so $144 sits **inside** the distribution, not above al
 }
 ```
 
-The `reason` field is not cosmetic — it is the product. Store every one of these, every round, both runs. This is what the click-through trace displays later. Reject empty or template reasons in the runner (not “I decided to churn”).
+The `reason` field is not cosmetic — it is the product. It must sound like that category reacting to the product decision, stay within 40–400 characters, and remain consistent with the frozen playbook. Store every one, every round, both runs. Reject empty or template reasons (not “I decided to churn”).
 
 ---
 
@@ -244,7 +252,7 @@ This is deliberately simple attribution (a decision-diff weighted count), not a 
 
 ## 7. Output — exact shape
 
-Four frozen artifacts are the scientific record. If you cannot replay from them, you do not have causality.
+Five frozen artifacts are the **paper export**. Supabase Postgres (`experiments` + append-only `events`) is the **live process record** — see [`architecture.md`](architecture.md) ADR-2 and §7.5. If you cannot rebuild the paper from the ledger, you do not have causality. The JSON files remain the inspectable bundle the UI and judges read; they are written at milestones, not after every agent decision.
 
 | Stage | Input | Frozen output |
 |---|---|---|
@@ -283,7 +291,9 @@ Read top to bottom like a paper. The chart is the figure. The trace is the appen
 | Surface | Job | Priority |
 |---|---|---|
 | Two-scenario header + receipt | Name the fork. Prove nothing else changed. Prompt hash, seed, roster hash visible. | **P0 — rhetorical spine** |
-| Twin trajectories | One primary metric (share or MRR), with the other on a toggle. Intervention round marked. | **P0 — visual center** |
+| Twin trajectories | Share **and** MRR as two small-multiple figures (not a toggle). Intervention round marked. | **P0 — visual center** |
+| Persona outcomes | Five users: stay / churn / switch in A vs B. | **P1 — this revision** |
+| Competitor path | Competitor price and hold/match/undercut over rounds, A vs B. | **P1 — this revision** |
 | Attribution bars | Per-round contribution split. Makes it look like causal analysis. | **P0 — differentiator** |
 | Click-through trace | Side-by-side reasons for the agents who actually differed. | **P0 — credibility defense** |
 | Metric cards | Final share delta, MRR delta, churn count. One of them should surprise. | **P1 — polish** |
@@ -294,13 +304,14 @@ Read top to bottom like a paper. The chart is the figure. The trace is the appen
 **Hackathon build order (P0 + P1 only):**
 
 1. **Two-scenario header** — plain text, what changed, nothing else. ("Baseline $120 vs +20% → $144")
-2. **Divergence line chart** — two lines (Chart.js), x = round, y = your chosen primary metric. This is the visual center of the demo.
-3. **Attribution bar under the chart** — a stacked/segmented bar per round showing causal contribution split (agent colors). This is the piece that makes it look like real causal analysis, not just "two lines diverged."
-4. **Click-through trace** — clicking any round on the chart opens a small panel showing each agent's actual logged `reason` string for that round, in both runs, side by side. This is your answer to "is the model actually deciding this."
-5. **Metric cards** — 3 summary numbers at the top (final market share delta, revenue delta, churn count), rounded, with a colored delta indicator.
-6. **Intervention log / diff view** — a small, explicit "0 other variables changed" panel. This is the receipt. Put it somewhere visible, not buried — it's doing real rhetorical work in your pitch.
+2. **Share and MRR line charts** — two figures, x = round, A vs B. This is the visual center. Do not hide MRR behind a toggle.
+3. **Persona outcomes + competitor path** — who moved, how the incumbent reacted.
+4. **Attribution bar under the selected round** — stacked contribution. This is the piece that makes it look like real causal analysis.
+5. **Click-through trace** — side-by-side reasons for agents who differed.
+6. **Metric cards** — final share delta, revenue delta, churn count.
+7. **Intervention receipt** — “0 other variables changed.”
 
-Build order matters here: get 1–3 working first (that's the whole story), 4 next (that's your credibility defense), 5–6 last (polish). Do not start P2 on hackathon day.
+Build order: get 1–4 working (that's the whole story), 5 next (credibility), 6–7 polish. Do not start P2 (assumption drawer, experiment grid, export) until this revision's research/confirm path is green.
 
 ---
 
@@ -374,7 +385,7 @@ If your simulation produces something wildly different from this shape (e.g. zer
 
 ---
 
-## 11. Build order for the day (suggested time-boxing)
+## 11. Build order for this revision
 
 | Time | Task |
 |---|---|
@@ -382,10 +393,10 @@ If your simulation produces something wildly different from this shape (e.g. zer
 | Late morning (1–2 hrs) | Full round loop (8 rounds), 3 fixed personas, seed-locking, run A vs run B |
 | Early afternoon (1 hr) | Attribution math + divergence chart (dashboard items 1–3) |
 | Early-mid afternoon (1 hr) | Click-through trace (item 4) — not optional, this is your credibility mechanism |
-| Mid afternoon (1–1.5 hrs, only if the above is solid) | §5.0 persona-generation step — swap hardcoded roles for a generated roster; test against 2 different product descriptions to confirm the roster genuinely differs |
-| Last hour | Metric cards, intervention log panel, rehearse the demo: show roster generation on 2 products briefly, then dive into the full worked example |
+| Mid afternoon | §5.0 research + confirm — proposed 5+1+1 roster; owner must confirm; two products must differ |
+| After that | Parallel buyers, competitor on S1, tunable rounds (default 4), extra paper figures, token caps |
 
-**Cutoff rule:** if the fixed-role pipeline (through the trace panel) isn't fully working by early-mid afternoon, skip §5.0 entirely and demo with the fixed roster. A working fixed-role demo beats a half-built dynamic one.
+**Cutoff rule:** if the fixture paper through the trace panel isn't working, skip research and demo with the fixed Grok Bot roster. A working fixed-role demo beats a half-built scrape.
 
 ---
 
@@ -394,7 +405,7 @@ If your simulation produces something wildly different from this shape (e.g. zer
 1. "This is a controlled experiment, not a prediction — same seed, same agents, one variable changed."
 2. "Every agent decision has a logged reason — click any divergence point and see exactly why."
 3. "Grok 4.6 is making every decision you see — remove it and there's nothing left to demo."
-4. (if §5.0 shipped) "We don't hardcode buyer and competitor — Grok 4.6 reads the product and decides who actually belongs in this market." Show the roster for two different products side by side as proof.
+4. "We don't invent a business agent — you are the owner. We research five users and one competitor from how that category talks, you confirm, then we freeze them for both runs."
 5. Do **not** claim this is what will happen in the real market. Claim: this is what happens in this frozen agent market, under these assumptions, if you change only this.
 
 ### 12.1 Demo script

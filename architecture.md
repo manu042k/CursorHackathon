@@ -3,8 +3,8 @@
 **Audience:** 4 engineers, one-day hackathon  
 **Companion docs:** [`counterfactual-replay-spec.md`](counterfactual-replay-spec.md) (product + causal contract), [`DESIGN-Guide.md`](DESIGN-Guide.md) (web UI system)  
 **Live inference:** [Cursor Python SDK](https://cursor.com/docs/sdk/python) (`cursor-sdk`) — not a direct Grok HTTP client. Spec language about Grok 4.6 is the product metaphor; this architecture binds every live decision to `AsyncAgent.prompt`.  
-**Scope:** Layer 1 only — twin-run engine, frozen artifacts, inspectable paper UI. No calibration, no experiment grid, no Shapley.  
-**UI status:** Implemented in `frontend/` per §10. Backend lives in `backend/` (not `api/` / `web/`). **Skipped:** US-A5 (generated roster, cutoff), US-D7 (export/print).
+**Scope:** Layer 1 twin-run engine, plus the product flow in §1.1 (research → confirm roster → twin run → paper). No calibration, no experiment grid, no Shapley.  
+**Shipped:** Fixture twin-run, Grok Bot golden paper (8 rounds), sequential buyers, `POST /experiments` starts immediately. Frontend in `frontend/` per §10 as of the hackathon cut. Backend in `backend/` (not `api/` / `web/`). **Skipped:** US-A5 (one-shot roster from product text only), US-D7 (export/print). **Pending:** US-B8 (Supabase ledger) and §14 stories US-A7–A10, US-B9–B10, US-C7–C8, US-D8 (this revision).
 
 This document is the build contract. If two tracks disagree, this file plus the spec win. Do not invent a second architecture during the day.
 
@@ -15,9 +15,9 @@ This document is the build contract. If two tracks disagree, this file plus the 
 | If you are… | Read first | Then own |
 |---|---|---|
 | **A — Agent Runtime** | §5, §6, ADR-3, ADR-7 | Cursor SDK adapter, prompts, personas, one-round I/O |
-| **B — Twin Engine + API** | §4, §7, §8, §9 | Twin runner, artifacts, attribution, HTTP |
-| **C — Setup & Shell** | §10, DESIGN-Guide | Tokens, app chrome, setup form, receipt, run progress |
-| **D — Results Paper** | §10, §8, DESIGN-Guide | Metric cards, charts, attribution bars, click-through trace |
+| **B — Twin Engine + API** | §4, §7, §7.5, §8, §9 | Twin runner, Postgres ledger, JSON exports, attribution, HTTP |
+| **C — Setup & Shell** | §10, DESIGN-Guide | Tokens, app chrome, setup form, roster confirm, receipt, run progress |
+| **D — Results Paper** | §10, §8, DESIGN-Guide | Metric cards, share + MRR figures, persona outcomes, competitor path, attribution, trace |
 | **Everyone, first 45 min** | §1–§3, §11, §13 | Shared types, fixture, “hello world” vertical slice |
 
 ---
@@ -26,12 +26,44 @@ This document is the build contract. If two tracks disagree, this file plus the 
 
 ### Goal
 
-A user defines a product and **one** intervention. The system freezes a market of agents, runs it twice with a locked seed (baseline vs counterfactual), and returns an inspectable causal paper: two trajectories, named contributors, clickable reasons, and a visible “0 other variables changed” receipt.
+A **business owner** (the platform user) enters a product and **one** action, confirms a researched roster of **5 user personas + 1 competitor + 1 analyst**, then runs a locked-seed twin simulation. The paper shows what that one change did: two trajectories, persona outcomes, competitor path, named contributors, clickable reasons, and a visible “0 other variables changed” receipt.
+
+There is **no business-agent persona**. The owner is outside the market; they set the intervention.
+
+### 1.1 Product flow (this revision)
+
+```mermaid
+flowchart TD
+  A[Owner enters product plus one action] --> B[Research agents distill category social patterns]
+  B --> C[Preview: 5 user personas, 1 competitor, 1 analyst]
+  C --> D{Owner confirms analysis}
+  D -->|yes| E[Freeze roster: identical personas for Run A and Run B]
+  E --> F[Each round: 5 users in parallel on snapshot S0]
+  F --> G[Engine applies user decisions: arithmetic in market.py]
+  G --> H[Competitor decides alone on post-user snapshot S1]
+  H --> I[Analyst notes only, weight 0]
+  I --> J[Append every event to Postgres]
+  J --> K{N rounds times 2 runs done?}
+  K -->|no| F
+  K -->|yes| L[Paper: what diverged, who moved, business impact]
+```
+
+1. Owner opens `/` and fills product / business details.
+2. Owner picks the one variable (live: `price_change` only) and **rounds** (3–8, default **4**).
+3. `POST /experiments` starts **research**, not the twin run. Background research agents produce a proposed roster. No live social fetch during rounds.
+4. UI shows the roster. Owner confirms (`POST /experiments/{id}/start`) or abandons.
+5. Twin run: same frozen user personas on A and B. Users decide **in parallel**. Competitor runs **after** user decisions are applied. Analyst is meta only.
+6. Engine computes share, MRR, WTP gap, prices and **hands them in** the observation JSON. Agents must not redo market math. Unchanged fields are byte-identical across A and B.
+7. Every observe / decide / mutate / round event is appended to the ledger.
+8. Paper: headline numbers, share **and** MRR small-multiples, persona outcomes, competitor path, attribution bar, reason console.
 
 ### Non-goals (hackathon)
 
-- Auth, multi-user, billing
-- Postgres / Redis / queues / k8s
+- Auth, multi-user, billing (`experiments.user_id` is nullable for later)
+- Redis / queues / k8s / local Docker Postgres
+- Supabase Auth, Realtime, Storage, or any browser → Supabase client
+- Dual-write of JSON on every agent decision
+- Projection tables besides `experiments` + `events`
 - Historical calibration or CSV upload
 - More than one live intervention type (`price_change` only)
 - Shapley / leave-one-out attribution
@@ -39,13 +71,14 @@ A user defines a product and **one** intervention. The system freezes a market o
 
 ### Hard constraints (from spec)
 
-- 3 roles in the default roster (buyers, competitor, analyst)
-- 8 rounds
-- 1 variable changed
+- Roster catalogue: **5 user (buyer) personas**, **1 competitor**, **1 analyst**. No business-agent class.
+- Rounds: integer **3–8**, default **4** on new experiments. Grok Bot golden paper stays **8** so the R4 demo fixture does not need a rewrite.
+- 1 variable changed (`price_change` live)
 - Grok Bot fixture, seed `42`, prepared in advance
-- Generate-once / freeze / reuse for roster and prompts
+- Generate-once / freeze / reuse for roster, reaction playbooks, and prompts. Research does not run between A and B.
 - Live decisions via Cursor SDK (`cursor-sdk`), not a raw model HTTP client
-- UI follows `DESIGN-Guide.md` — no parallel palette
+- Reasonable token limits on every agent call (§6.9)
+- UI follows `DESIGN-Guide.md` — no parallel palette; not a SaaS analytics dashboard
 
 ---
 
@@ -59,13 +92,19 @@ A user defines a product and **one** intervention. The system freezes a market o
 
 **Trade-off:** Two `localhost` ports. Accept it. CORS allow `http://localhost:3000`.
 
-### ADR-2 — Filesystem artifacts, not a database
+### ADR-2 — Postgres ledger; JSON files are milestone exports
 
-**Decision:** Each experiment is a directory of JSON files. No Postgres.
+**Decision:** PostgreSQL is the live system of record: one `experiments` header row plus an append-only `events` table. The five JSON files (`experiment.json`, `roster.json`, `run_a.json`, `run_b.json`, `attribution.json`) are **milestone exports** of that ledger, not a second live store. Dual-write on every agent decision is forbidden.
 
-**Why:** The product *is* the scientific record (`experiment.json`, `roster.json`, `run_a.json`, `run_b.json`, `attribution.json`). A database would hide the claim. Replay = read the directory.
+**Why:** The paper still needs an inspectable bundle you can `cat`. The process also needs an ordered log of observations, decisions, market mutations, and round outcomes (~289 events per experiment). Five blobs cannot do the second job. Writing JSON after every mutation doubles I/O and splits the truth on crash. Events are the process; files are the paper.
 
-**When to revisit:** Multi-user product (layer 4). Not today.
+**GET contract:** `GET /experiments/{id}` and `GET .../artifacts/{name}` read the exported JSON. If status is `complete` and a file is missing, materialize it from `events` then write the export. Do not replay events on every paper GET.
+
+**Host:** Supabase (hosted Postgres). FastAPI uses `DATABASE_URL` (session-mode pooler URI, `sslmode=require`). Do not use the anon key, `supabase-js`, Auth, Realtime, or Storage for the ledger. The browser never talks to Supabase.
+
+**n-user later:** `user_id text NULL` and index `(user_id, created_at desc)` now. Do not build auth (including Supabase Auth) in this layer. At scale, keep events in Supabase Postgres and move JSON bundles to object storage — table layout does not change. No extra projection tables until a query is slow.
+
+**When not to:** Do not UPDATE or DELETE event rows. Do not add Redis, queues, k8s, or a local Docker Postgres under this ADR. If Supabase is unreachable, the experiment fails. If a JSON export fails after events are durable, set `status=failed`, `error=export_failed`; events stay.
 
 ### ADR-3 — Hexagonal agent runtime
 
@@ -75,9 +114,11 @@ A user defines a product and **one** intervention. The system freezes a market o
 
 ### ADR-4 — REST + SSE, not WebSockets
 
-**Decision:** `POST /experiments` starts a run. `GET /experiments/{id}` returns the paper when `status=complete`. `GET /experiments/{id}/events` is Server-Sent Events for round progress.
+**Decision:** `POST /experiments` creates the experiment and starts **research** (`status=researching`). It does **not** start the twin run. `GET /experiments/{id}` returns the proposed roster when `status=roster_ready`. `POST /experiments/{id}/start` freezes that roster and starts Run A. `GET /experiments/{id}/events` is SSE for research + round progress. Paper at `status=complete`.
 
-**Why:** One long job (tens of Cursor `Agent.prompt` runs). Polling is ugly; WebSockets are extra moving parts. SSE is enough for “Round 4 / 8 · Run B”.
+**Why:** The owner must see who will populate the market before spending N×2×7 agent calls. Polling is ugly; WebSockets are extra moving parts. SSE is enough for “Researching personas” then “Run B · round 3 / 4”.
+
+**Until US-B9 lands:** the shipped API still starts the twin run on `POST /experiments` (hackathon path). Do not call that the product flow.
 
 ### ADR-5 — Shared contract package, generated once
 
@@ -97,7 +138,7 @@ A user defines a product and **one** intervention. The system freezes a market o
 
 1. **Python, not TypeScript.** `DecisionPort` and the twin runner already live in `backend/`. A second Node agent process would split causality across two runtimes.
 2. **`AsyncAgent.prompt`, not `create` + `send`.** Durable agents keep conversation memory. Memory across rounds — or worse, across Run A and Run B — breaks the causal claim. One-shot prompt creates, runs, waits, and disposes. Isolation is the method.
-3. **Local + `tools=[]`.** `cwd` is an isolated scratch directory per decision. No ambient `setting_sources`. No file edits to `run_a.json`. The experiment record is written only by `store.py`.
+3. **Local + `tools=[]`.** `cwd` is an isolated scratch directory per decision. No ambient `setting_sources`. No file edits to `run_a.json`. Live facts go to the Postgres ledger; `store.py` writes JSON exports at milestones only.
 
 **Auth:** pass `api_key=` explicitly from settings (do not rely on ambient `CURSOR_API_KEY` in the request path). Key from [Cursor Dashboard → API Keys](https://cursor.com/dashboard/api).
 
@@ -107,50 +148,106 @@ A user defines a product and **one** intervention. The system freezes a market o
 
 Docs: [Cursor Python SDK](https://cursor.com/docs/sdk/python).
 
+### ADR-8 — Research once, confirm, then freeze
+
+**Decision:** Social / category research runs **once** after setup, **before** the twin simulation. It emits a proposed roster. The owner confirms. Then `roster.frozen` is hashed and reused on both runs.
+
+**Why:** Personas must react like users of that **category** on social media (public complaint vs quiet renewal vs competitor quote-tweet). That evidence belongs in a frozen **reaction playbook**, not in a live feed the agent scrolls during rounds. Live fetch during the 8 (or 4) rounds would add extra variables and void the causal claim.
+
+**Must not:** clone a real person’s account; scrape during Run A/B; invent a new decision verb per tweet. Map clusters onto the closed archetype catalogue. Distinctive quotes live in `traits.evidence`.
+
+### ADR-9 — Class + archetype + instance; no business agent
+
+**Decision:** Three layers on every roster agent:
+
+| Layer | Closed or open | What it controls |
+|---|---|---|
+| `class` | Closed: `buyer` \| `competitor` \| `analyst` | Decision verbs and apply order |
+| `archetype` | Closed small enum | Chart bands and playbooks |
+| Instance | Open | WTP, loyalty, voice, frozen evidence |
+
+Buyer archetypes: `price_sensitive`, `loyalist`, `value_seeker`, `enterprise`, `churn_risk`. Competitor: `incumbent` (default), later `discounter` / `premium_entrant`. Analyst has no archetype that moves the market.
+
+**No `business` class.** The platform user *is* the business owner.
+
+Do not let research invent new classes. `role` may remain a display string (`price_sensitive_buyer`) derived from class+archetype so existing papers still load.
+
+### ADR-10 — Parallel users, then competitor on S1
+
+**Decision:** Each round:
+
+1. Snapshot **S0** (prices, status, share, MRR, precomputed `wtp_gap`).
+2. Five buyer agents `asyncio.gather` on identical S0.
+3. Engine applies stay/churn/switch → **S1**.
+4. Competitor decides **alone** on S1 (`hold` / `undercut` / `match`).
+5. Analyst reads the round log; weight 0.
+
+Same order both runs. Buyers never see each other’s in-round decisions. The competitor **does** see this round’s user reactions.
+
+**Supersedes** the hackathon freeze “everyone observes S0.” Shipped `twin_runner.py` still uses sequential S0-for-all until US-A10.
+
+### ADR-11 — Token limits
+
+**Decision:** Cap every Cursor call. Social corpora never enter round prompts — only the distilled playbook.
+
+| Call | Input budget | Output | Repairs |
+|---|---|---|---|
+| Research (once) | Product text + capped evidence | Roster JSON only | 1 then fail |
+| Each market decision | Snapshot + frozen persona (~1k tokens) | JSON; `reason` 40–400 chars | 1 then fail experiment |
+
+`tools=[]` on market decisions. `history_summary` stays the deterministic short string (US-A6). If `AgentOptions` exposes a max-token field, set it; otherwise enforce via prompt size + reason cap. Same model id for all market decisions.
+
 ---
 
 ## 3. System context
 
 ```mermaid
 flowchart LR
-  User["Strategy user"] --> Web["Next.js web\n:3000"]
+  User["Business owner"] --> Web["Next.js web\n:3000"]
   Web -->|"REST + SSE"| Api["FastAPI api\n:8000"]
-  Api --> Store["Artifact store\ndata/experiments/{id}/"]
+  Api --> Ledger["Supabase Postgres\nexperiments + events"]
+  Api --> Store["JSON export\ndata/experiments/{id}/"]
   Api --> Runtime["Agent runtime"]
   Runtime --> CursorSdk["cursor-sdk\nAsyncAgent.prompt local"]
   CursorSdk --> Bridge["AsyncClient.launch_bridge"]
   Runtime --> Fixture["FixtureAdapter\nAcme seed 42"]
 ```
 
-Trust boundary: the browser never calls Cursor. `CURSOR_API_KEY` stays on the backend. The web app only ever sees frozen artifacts and progress events.
+Trust boundary: the browser never calls Cursor or Supabase. `CURSOR_API_KEY` and `DATABASE_URL` stay on the backend. The web app only ever sees frozen artifact exports and progress events. The live log lives in Supabase Postgres.
 
 ---
 
 ## 4. Logical modules
 
-One FastAPI process, four modules. Modules talk only through public functions / Pydantic types — never by reaching into each other’s internals. This is a modular monolith, not four services.
+One FastAPI process, modular internals. Modules talk only through public functions / Pydantic types — never by reaching into each other’s internals. This is a modular monolith, not four services.
 
 ```mermaid
 flowchart TB
   subgraph api [FastAPI process]
     HTTP["http / experiments router"]
     Setup["setup\nvalidate + freeze experiment.json"]
-    Roster["roster\nfixed Acme OR generate-once"]
+    Research["research\ncategory personas once"]
+    Roster["roster\nfixed Grok Bot OR confirmed freeze"]
     Twin["twin_runner\nRun A then Run B"]
     Agents["agents\nDecisionPort"]
     Attr["attribution\npure functions"]
-    Store["store\nread/write JSON"]
+    Ledger["ledger\nappend events"]
+    Store["store\nmilestone JSON export"]
     Narr["narrative\ngrounded summary only"]
   end
   HTTP --> Setup
   HTTP --> Twin
-  Setup --> Roster
+  Setup --> Research
+  Research --> Roster
+  Setup --> Ledger
   Setup --> Store
   Roster --> Agents
   Twin --> Agents
+  Twin --> Ledger
   Twin --> Store
   Twin --> Attr
   Attr --> Narr
+  Attr --> Ledger
   Attr --> Store
   Agents --> CursorSdk
   Agents --> Fixture
@@ -158,14 +255,17 @@ flowchart TB
 
 | Module | Responsibility | Must not do |
 |---|---|---|
-| `setup` | Validate input, lock seed, write `experiment.json` | Call Cursor, compute metrics |
-| `roster` | Emit frozen `roster.json` (fixed first, generated later) | Differ between run A and run B |
-| `agents` | One decision per agent per round, schema-valid JSON | Mutate market state |
-| `twin_runner` | Apply intervention only to B from `applies_from_round`, drive 8 rounds × 2 | Invent attribution text |
+| `setup` | Validate input, lock seed, append `experiment.created`, export `experiment.json` | Start the twin run; call Cursor for market decisions |
+| `research` | One-shot (or small fan-out) category research → proposed 5+1+1 roster + playbooks | Run during A/B; invent new classes; dump raw social corpora into round prompts |
+| `roster` | Freeze confirmed roster; append `roster.frozen` | Differ between run A and run B |
+| `agents` | One decision per agent per round, schema-valid JSON, token-capped | Mutate market state; recompute share/MRR |
+| `twin_runner` | Apply intervention only to B from `applies_from_round`; N rounds × 2; parallel buyers then competitor on S1; emit events | Invent attribution text |
+| `market` | Share, MRR, WTP gap, prices — handed to agents in the observation | Let the model invent arithmetic |
 | `attribution` | Divergence, weights, normalize to 100% | Call Cursor |
 | `narrative` | 1–2 sentences citing stored reasons | Add claims not in logs |
-| `store` | Atomic write of artifacts, load by id | Business logic |
-| `http` | Auth-less REST + SSE | Simulation internals |
+| `ledger` | Append-only `events` + `experiments.status`; fail if Supabase is down | UPDATE/DELETE events; business logic; anon key |
+| `store` | Atomic JSON export at milestones; load paper by id | Be the live log; rewrite files per decision |
+| `http` | Auth-less REST + SSE (`Last-Event-ID` = `events.seq`) | Simulation internals |
 
 Frontend modules (Next.js) are pages + design-system components, not a second domain layer. The paper view is a renderer of `ExperimentPaper`. It does not recompute causality.
 
@@ -183,14 +283,15 @@ Frontend modules (Next.js) are pages + design-system components, not a second do
 │   ├── pyproject.toml               # fastapi, pydantic, cursor-sdk
 │   ├── app/
 │   │   ├── main.py                  # FastAPI app, CORS
-│   │   ├── settings.py              # CURSOR_API_KEY, CURSOR_MODEL, DATA_DIR
+│   │   ├── settings.py              # CURSOR_API_KEY, CURSOR_MODEL, DATA_DIR, DATABASE_URL
 │   │   ├── contracts.py             # Pydantic source of truth
 │   │   ├── http/
 │   │   │   └── experiments.py       # routes + SSE
 │   │   ├── setup.py
 │   │   ├── roster/
 │   │   │   ├── fixed_grok_bot.py    # P0 fixture
-│   │   │   └── generate.py          # P1, skip if late
+│   │   │   ├── generate.py          # US-A8 research → proposed roster
+│   │   │   └── catalogue.py         # class + archetype enums (US-A7)
 │   │   ├── agents/
 │   │   │   ├── port.py              # DecisionPort
 │   │   │   ├── cursor_adapter.py    # CursorSdkAdapter (AsyncAgent.prompt)
@@ -202,7 +303,10 @@ Frontend modules (Next.js) are pages + design-system components, not a second do
 │   │   ├── market.py                # state + metrics
 │   │   ├── attribution.py
 │   │   ├── narrative.py
-│   │   └── store.py
+│   │   ├── ledger.py                # append events; US-B8
+│   │   └── store.py                 # milestone JSON export
+│   ├── db/
+│   │   └── schema.sql               # experiments + events (apply in Supabase SQL Editor)
 │   └── tests/
 │       ├── test_attribution.py
 │       ├── test_twin_determinism.py
@@ -219,6 +323,8 @@ Frontend modules (Next.js) are pages + design-system components, not a second do
 │   │   ├── lib/api.ts
 │   │   └── types/contracts.ts       # frozen shared types
 │   └── public/
+├── supabase/
+│   └── migrations/                  # same DDL for `supabase db push`
 └── data/
     └── experiments/
         └── grok-bot-seed-42/        # checked-in golden paper for UI
@@ -237,17 +343,27 @@ Frontend modules (Next.js) are pages + design-system components, not a second do
 
 ## 6. Agent runtime (Person A)
 
-### 6.1 Roles (fixed roster, build first)
+### 6.1 Roster catalogue (users, competitor, analyst)
 
-| Agent id | Role | Count | Observes | Decides |
+**Classes** (closed):
+
+| `class` | Agent ids | Count | Observes | Decides |
 |---|---|---|---|---|
-| `buyer_{1..n}` | Buyer | 5 for demo (subset of 30-weight market) | own WTP, loyalty, current price, competitor price, status | `stay` / `churn` / `switch` |
-| `competitor` | Incumbent | 1 | your price, share trend | `hold` / `undercut` / `match` |
-| `analyst` | Meta, not a participant | 1 | full round history | `note` — one-line causal flag, weight 0 in attribution |
+| `buyer` | `buyer_{1..5}` | 5 instantiated (weights sum to `market_size`) | S0: own playbook, WTP, loyalty, **precomputed** `wtp_gap`, prices, status | `stay` / `churn` / `switch` |
+| `competitor` | `competitor` | 1 | **S1** after users applied: your price, new share, churn this round | `hold` / `undercut` / `match` |
+| `analyst` | `analyst` | 1 | full round history | `note` — weight 0 |
 
-**Market size vs instantiated callers:** spec says 30 addressable buyers. For latency, instantiate **5 Cursor buyer agents** whose decisions are weighted to represent bands of the 30 (e.g. buyer_1 weight 8, …). Document weights in `roster.json`. Do not silently spawn 30 live `Agent.prompt` runs on demo day.
+**No business class.**
 
-WTP must straddle $144. At least two buyers sit in `$120–$144`. That band *is* the plot.
+**Buyer archetypes** (closed; chart bands): `price_sensitive`, `loyalist`, `value_seeker`, `enterprise`, `churn_risk`.
+
+Each buyer instance carries a frozen **reaction playbook** (how that category talks and acts on a price hike, a cheaper competitor, a feature cut) plus optional `evidence` strings distilled from category social patterns. Reasons must sound like that category, not like an economist in an experiment. Decision verbs stay the closed enum — a social pile-on maps to `churn` / `switch` / `stay`, it does not create a `tweet` action.
+
+**Market size vs instantiated callers:** 30 addressable buyers. Instantiate **5** weighted Cursor buyer agents. Do not spawn 30 live prompts.
+
+WTP must straddle the forked price (Grok Bot: $144). At least two buyers sit in `$120–$144`. That band *is* the plot.
+
+Fixture `fixed_grok_bot.py` maps onto this catalogue (price-sensitive vs enterprise/loyalist). Display `role` strings may stay for golden JSON compatibility.
 
 ### 6.2 DecisionPort
 
@@ -353,8 +469,9 @@ If the fixture adapter is used, the receipt **must** say so. Never claim Cursor 
 ### 6.6 Prompt rules
 
 - Decision prompt **template** is identical for A and B. Only the request JSON body may differ, and only by the intervention field after `applies_from_round`.
-- User payload is JSON only (no extra prose that could drift between runs).
-- Instruct: reply with a single JSON object, no markdown, keys `decision`, `reason`, `confidence`.
+- Address the agent as this customer / competitor, not as “you are `buyer_3` in an experiment.”
+- User payload is JSON only (no extra prose that could drift between runs). Include **precomputed** market fields (`wtp_gap`, share, mrr on competitor S1). Agents must not recalculate them.
+- Instruct: reply with a single JSON object, no markdown, keys `decision`, `reason`, `confidence`. `reason` 40–400 characters, category voice, cite the product decision just observed, stay consistent with the frozen playbook.
 - `history_summary` is a deterministic string built from prior *decisions*, not a second Cursor agent summarize step.
 - Analyst: simpler path — runs inside each run on that run’s history; attribution uses decision-diffs of buyers/competitor only. Analyst weight 0.
 
@@ -369,6 +486,23 @@ If the fixture adapter is used, the receipt **must** say so. Never claim Cursor 
 | Context leak | `create` + `send` follow-up | Forbidden for twin-run decisions |
 | Ambient settings | `setting_sources="all"` | Forbidden. Market agents must not load this repo’s Cursor rules |
 
+### 6.8 Research agents (once per experiment)
+
+Given `product_name`, `product_description`, `current_price`, `competitor_price`, `market_size`, emit a proposed `Roster` with:
+
+- exactly 5 `buyer` instances covering at least 3 archetypes, weights summing to `market_size`
+- 1 `competitor`
+- 1 `analyst`
+- per-buyer `reaction_playbook` + short `evidence` (paraphrase, not a tweet dump)
+
+Do **not** fetch social networks during the twin run. Research may use a single Cursor call with a capped prompt (product text + optional pasted/cached category notes). Fixture path: skip research, use `fixed_grok_bot.py`, still show a confirm step with that roster.
+
+Map every invented cluster onto the catalogue. Reject a roster that adds a fourth class or a new decision verb.
+
+### 6.9 Token limits
+
+See ADR-11. Settings (names illustrative): `MAX_DECISION_INPUT_TOKENS`, `MAX_REASON_CHARS=400`, `MAX_REPAIR_PROMPTS=1`. Truncate `history_summary` if it would blow the input cap (keep most recent rounds first). Research output is roster JSON only.
+
 ---
 
 ## 7. Twin runner & market state (Person B)
@@ -378,28 +512,41 @@ If the fixture adapter is used, the receipt **must** say so. Never claim Cursor 
 ```mermaid
 stateDiagram-v2
   [*] --> Created: POST /experiments
-  Created --> RosterFrozen: write roster.json
+  Created --> Researching: research.started
+  Researching --> RosterReady: proposed roster
+  RosterReady --> RosterFrozen: POST .../start + roster.frozen
   RosterFrozen --> RunningA: seed lock
-  RunningA --> RunningB: run_a.json written
-  RunningB --> Attributing: run_b.json written
-  Attributing --> Complete: attribution.json + narrative
+  RunningA --> RunningB: run.completed A + export run_a.json
+  RunningB --> Attributing: run.completed B + export run_b.json
+  Attributing --> Complete: attribution.computed + export attribution.json
+  Researching --> Failed: cursor/schema error
   RunningA --> Failed: cursor/schema error
   RunningB --> Failed
   Attributing --> Failed
 ```
 
-Invariant: `run_a` and `run_b` share `roster_hash`, `prompt_hash`, `random_seed`. The only allowed diff in inputs is the intervention field from `applies_from_round` onward.
+Statuses: `created` | `researching` | `roster_ready` | `running_a` | `running_b` | `attributing` | `complete` | `failed`.
+
+Invariant: `run_a` and `run_b` share `roster_hash`, `prompt_hash`, `random_seed`. The only allowed diff in inputs is the intervention field from `applies_from_round` onward. User personas are identical on both runs.
+
+Until US-B9: shipped code jumps Created → RosterFrozen → RunningA.
 
 ### 7.2 Round loop (each run)
 
-For `round` in `1..8`:
+For `round` in `1..experiment.rounds` (3–8):
 
-1. Build market snapshot: `current_price`, `competitor_price`, subscribed set, share, MRR, churn.
-2. If this is run B and `round >= applies_from_round`, apply `variable_delta` to the intervened field (`current_price` for `price_change`).
-3. For each agent, call `DecisionPort.decide` with a payload whose non-intervened keys match the sibling run.
-4. Advance state from decisions (buyers churn/switch first, then competitor reacts to the **new** share, or: all agents observe the *start-of-round* snapshot — pick one and freeze it). **Freeze: all agents observe start-of-round snapshot. Apply buyer decisions, then competitor, in that order. Same order both runs.**
-5. Append `RoundLog`. Emit SSE `round_complete`.
-6. Persist incrementally so a crash still leaves partial logs.
+1. Build **S0**: `current_price`, `competitor_price`, subscribed set, share, MRR, per-buyer `wtp_gap`. Arithmetic lives here, not in the model.
+2. If this is run B and `round >= applies_from_round`, apply `variable_delta` to the intervened field (`current_price` for `price_change`) **before** S0.
+3. Call `DecisionPort.decide` for all **five buyers in parallel** (`asyncio.gather`) with identical S0. Non-intervened keys for `(agent_id, round)` must match the sibling run.
+4. Apply buyer decisions (churn/switch remove weight) → **S1**.
+5. Competitor decides **alone** on S1. Then analyst on the round log.
+6. Append `RoundLog`. Emit SSE `round_complete`.
+7. Append ledger events (`round.opened` … `round.closed`). Do **not** rewrite JSON per decision.
+8. After the run finishes, export `run_a.json` or `run_b.json` once.
+
+Crash recovery: replay `events` for that `experiment_id` ordered by `seq`. JSON files may be absent until the next milestone.
+
+Shipped runner still loops agents sequentially on S0 (including competitor) until US-A10.
 
 ### 7.3 Metrics (pure, from state)
 
@@ -419,6 +566,72 @@ Do not maintain a separate finance module. Cards read these series.
 
 For Acme, `applies_from_round = 1`, so alignment is “identical initial state only.” Still assert identical roster and opening snapshot.
 
+### 7.5 Experiment ledger (Supabase Postgres)
+
+Source of truth for process. JSON under `data/experiments/{id}/` is a derived paper bundle. Canonical DDL: [`backend/db/schema.sql`](backend/db/schema.sql) (idempotent enums, RLS on, `anon`/`authenticated` revoked). Apply once in the Supabase SQL Editor, or `supabase db push` using [`supabase/migrations/`](supabase/migrations/).
+
+FastAPI connects with `DATABASE_URL` from **Project Settings → Database → Connection string → Session pooler** (port 5432), add `sslmode=require`. Do not use the Transaction pooler (6543) for this long-lived API process. Do not put `SUPABASE_ANON_KEY` or `SUPABASE_SERVICE_ROLE_KEY` in the Next.js app.
+
+**Write protocol**
+
+1. `INSERT` into `events` with the next `seq` for that experiment (transaction with `experiments.status` when the state machine moves).
+2. Export JSON **only** at milestones: experiment + roster at freeze; `run_a` after Run A; `run_b` after Run B; `attribution` when complete.
+3. If Supabase is unreachable → experiment `failed`.
+4. If JSON export fails after events are durable → `status=failed`, `error=export_failed`. Never delete events.
+5. SSE `id:` field = `events.seq` so reconnect does not duplicate facts.
+
+**`experiments` (header — listing and status, no replay)**
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `text` PK | e.g. `exp_…` |
+| `user_id` | `text` NULL | unused until auth; index `(user_id, created_at desc)` |
+| `status` | enum | same as `Status` in contracts |
+| `error` | `text` NULL | `alignment_broken`, `export_failed`, … |
+| setup fields | native types | product, prices, seed, delta, adapter, rounds, hashes |
+| `prompt_hash` | `text` | receipt |
+| `roster_hash` | `text` | receipt |
+| `created_at`, `updated_at` | `timestamptz` | |
+
+**`events` (append-only)**
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `bigserial` | global |
+| `experiment_id` | `text` FK | `ON DELETE CASCADE` |
+| `seq` | `int` | unique per experiment, starts at 1 |
+| `event_type` | enum | see below |
+| `run_id` | `A` / `B` / NULL | experiment-level events are NULL |
+| `round` | `int` NULL | |
+| `agent_id` | `text` NULL | |
+| `payload` | `jsonb` NOT NULL | the fact; never an empty `{}` for decide/observe |
+| `occurred_at` | `timestamptz` | default `now()` |
+
+Constraints: `UNIQUE (experiment_id, seq)`, `seq > 0`. **No UPDATE/DELETE** of event rows from application code.
+
+**Event types** (keep `agent.observed` and `agent.decided` as two rows)
+
+| `event_type` | When | Payload (minimum) |
+|---|---|---|
+| `experiment.created` | POST accepted | setup request |
+| `research.started` | research agents begin | product fields |
+| `research.completed` | proposed roster ready | roster draft (not yet hashed as frozen) |
+| `roster.frozen` | owner confirmed; hash locked | `roster` + `roster_hash` |
+| `run.started` | before round 1 of A or B | `run_id`, opening snapshot |
+| `round.opened` | S0 | prices, subscribed, share, mrr, wtp_gaps |
+| `intervention.applied` | B only, `round >= applies_from_round` | field, from, to |
+| `agent.observed` | exact JSON the persona saw | `AgentDecisionRequest` |
+| `agent.decided` | after validate | `decision`, `reason`, `confidence` |
+| `market.mutated` | after buyers applied, then after competitor | subscribed, competitor_price, snapshot id `S0`/`S1` |
+| `round.closed` | end of round | share, mrr, prices |
+| `run.completed` | after last round | `run_id` |
+| `alignment.checked` | before attribution | `ok` or error |
+| `attribution.computed` | after diffs | `divergence_by_round`, method |
+| `experiment.completed` | paper ready | |
+| `experiment.failed` | any hard fail | `error` |
+
+Event count scales with `rounds` (≈ 7 agents × 2 observe/decide × N × 2 runs, plus round/run wrappers). Do not add projection tables until a query is slow. Do not duplicate this DDL in other files except `supabase/migrations/` (keep in sync with `backend/db/schema.sql`). Add `researching` / `roster_ready` to `experiment_status` when US-B9 lands.
+
 ---
 
 ## 8. Attribution & narrative (Person B)
@@ -429,7 +642,7 @@ For Acme, `applies_from_round = 1`, so alignment is “identical initial state o
 divergence(r) = share_A(r) - share_B(r)
 ```
 
-Also store `mrr_A`, `mrr_B` for the toggle. Headline both.
+Also store `mrr_A`, `mrr_B` for the **two** trajectory figures (share and MRR, not a toggle). Headline both.
 
 ### 8.2 Decision-diff contribution
 
@@ -462,11 +675,14 @@ Base: `http://localhost:8000`
 
 | Method | Path | Body / query | Response |
 |---|---|---|---|
-| `POST` | `/experiments` | `CreateExperimentRequest` | `{ id, status }` 202 |
-| `GET` | `/experiments/{id}` | | `ExperimentPaper` 200, or 202 if still running |
-| `GET` | `/experiments/{id}/events` | SSE | `status`, `round_complete`, `complete`, `failed` |
+| `POST` | `/experiments` | `CreateExperimentRequest` | `{ id, status: "researching" }` 202 |
+| `GET` | `/experiments/{id}` | | proposed roster when `roster_ready`; `ExperimentPaper` when `complete`; 202 if still working |
+| `POST` | `/experiments/{id}/start` | empty | `{ id, status: "running_a" }` 202 — freeze roster, start twin |
+| `GET` | `/experiments/{id}/events` | SSE | `status`, `research_complete`, `round_complete`, `complete`, `failed` |
 | `GET` | `/experiments/{id}/artifacts/{name}` | `experiment` \| `roster` \| `run_a` \| `run_b` \| `attribution` | raw JSON |
 | `GET` | `/health` | | `{ ok, cursor_configured, model, adapter }` |
+
+Until US-B9, `POST /experiments` still returns `running_a` and starts the twin run immediately.
 
 ### 9.1 CreateExperimentRequest
 
@@ -479,7 +695,7 @@ Base: `http://localhost:8000`
   "competitor_count": 1,
   "competitor_price": 100,
   "buyer_price_sensitivity": "medium",
-  "rounds": 8,
+  "rounds": 4,
   "random_seed": 42,
   "variable_type": "price_change",
   "variable_delta": "+20%",
@@ -488,7 +704,9 @@ Base: `http://localhost:8000`
 }
 ```
 
-Reject `rounds != 8`. Reject unknown `variable_type` except `price_change`. `adapter` is `"cursor"` | `"fixture"` (fixture is for UI and fallback).
+Accept `rounds` in **3–8** inclusive; default **4** if omitted. Reject `rounds` outside that range. Reject `applies_from_round` not in `1..rounds`. Reject unknown `variable_type` except `price_change`. `adapter` is `"cursor"` | `"fixture"` (fixture is for UI and fallback).
+
+Grok Bot golden paper keeps `"rounds": 8`.
 
 ### 9.2 ExperimentPaper (GET)
 
@@ -554,7 +772,8 @@ Two routes. No auth. No dashboard chrome. The UI is a short paper a stranger can
 
 ```mermaid
 flowchart LR
-  Setup["/  Hypothesis"] -->|POST live or open fixture| Progress["same page: the fork is running"]
+  Setup["/  Hypothesis"] -->|POST research| Confirm["same page: confirm roster"]
+  Confirm -->|POST start| Progress["the fork is running"]
   Progress -->|status=complete| Paper["/experiments/id  Finding"]
 ```
 
@@ -573,9 +792,9 @@ If they have to hunt a sidebar, decode a form, or click a tiny chart dot to find
 
 **Do not build:** a SaaS analytics dashboard, a chat with agents, a settings page with 12 fields, a spinner as the only waiting UI, or a chart that is the only way to select a round.
 
-**Do build:** a hypothesis you can read in one sentence, a finding you can read in one sentence, round buttons R1–R8, and a dark side-by-side console that opens on the round that actually moved.
+**Do build:** a hypothesis you can read in one sentence, a roster the owner confirms, a finding you can read in one sentence, round pills R1–RN, two trajectory figures, and a dark side-by-side console that opens on the round that actually moved.
 
-### 10.1 Three screens, one story
+### 10.1 Four screens, one story
 
 #### Screen 1 — Hypothesis (`/`)
 
@@ -595,10 +814,10 @@ See who caused the rest.
   from $120 to $144        │  current price · competitor price
   starting round 1.        │
                            │  The one change
-  [ Run this experiment ]  │  type: price  delta: +20%  from round 1
-  Open the prepared paper  │
-                           │  Method (locked)
-                           │  8 rounds · seed 42 · 0 other variables
+                           │  type: price  delta: +20%  from round 1
+  [ Begin research ]       │
+  Open the prepared paper  │  Method
+                           │  rounds 4 (3–8) · seed 42 · 0 other variables
 ```
 
 **Intuition rules:**
@@ -606,15 +825,32 @@ See who caused the rest.
 1. **Plain-English preview, live.** Left column restates the form as one sentence. If they change price or delta, the sentence updates. That sentence is the product, not the inputs.
 2. **Grok Bot is already filled.** First-run cost is one click, not a form. Empty fields are a failure.
 3. **Two doors, labeled honestly.**
-   - Primary pill: `Run this experiment` → `POST /experiments` (`adapter=cursor` when live, else explain the API is down).
+   - Primary pill: `Begin research` → `POST /experiments` (research, then confirm). Until US-B9: still `Run this experiment` and starts the twin immediately.
    - Secondary underline: `Open the prepared Grok Bot paper` → `/experiments/grok-bot-seed-42` from golden JSON. This is the demo path. Never dress fixture as live Cursor.
-4. **Method is a receipt, not disabled gray inputs.** Rounds, seed, “0 other variables” sit in the `Receipt` strip. They look intentional and locked, not broken.
+4. **Method is a receipt plus one owner control.** **Rounds** is tunable (3–8, default 4) on the Method strip. Seed and “0 other variables” stay locked. Rounds is not the intervened variable; both runs use the same N.
 5. **Fields grouped as Product / The one change / Method.** Do not present spec §4 as a flat 11-row spreadsheet.
 6. **Only `price_change` is choosable.** Other enum values stay out of the control. One beautiful fork beats a dropdown of unfinished interventions.
 
 **Mobile:** sentence on top, form below, CTAs sticky at the bottom.
 
-#### Screen 2 — The fork is running (same `/`, swapped body)
+#### Screen 2 — Confirm roster (same `/`, after research)
+
+The owner sees who will populate the market **before** paying for N×2 decision calls.
+
+```
+Five users we inferred          Competitor
+price_sensitive · WTP $128      incumbent · $100
+loyalist · WTP $168             Analyst (notes only)
+…
+
+[ Confirm and run analysis ]
+```
+
+- Fixture path still shows this screen, with the frozen Grok Bot roster, so the flow is one story.
+- Primary: `Confirm and run analysis` → `POST /experiments/{id}/start`.
+- Secondary: abandon / edit product (new POST; do not mutate a frozen roster).
+
+#### Screen 3 — The fork is running (same `/`, swapped body)
 
 No route change. The headline becomes the live method: `Running · $120 vs $144`.
 
@@ -624,7 +860,7 @@ R1 ···                  R1 ···
 R2 ···                  R2 ·
                         (fills only from SSE)
 
-Now: Run B · round 4 of 8
+Now: Run B · round 3 of 4
 share 69%   MRR $1,221
 ```
 
@@ -635,7 +871,7 @@ share 69%   MRR $1,221
 - If the API is missing, do **not** fake ticks. Show: `API is not running. Open the prepared Grok Bot paper.` plus the secondary link.
 - Failed runs stay here with the engine error. Never navigate to a paper of invented numbers.
 
-#### Screen 3 — Finding (`/experiments/[id]`)
+#### Screen 4 — Finding (`/experiments/[id]`)
 
 Read top to bottom in **demo-script order**. Default state must already show the interesting round. Do not land on a blank chart and hope they click.
 
@@ -651,11 +887,14 @@ buyer_3 · R4 · B
 Share  −10pp     MRR  +$51     Left  4
 fell             rose          buyers
 
-Figure · Share % | MRR $          [R1 R2 R3 R4 R5 R6 R7 R8]
-two lines, marker at intervention        R4 selected
+Figure 1 · Share %     Figure 2 · MRR $     [R1 … RN]
+two lines, marker at intervention          selected round
+
+Persona outcomes (A vs B stay/churn/switch)
+Competitor path (price + hold/match/undercut)
 
 This round: 62% price-sensitive churn · 38% competitor matching
-[ stacked bar for selected round, not a wall of eight unread bars ]
+[ stacked bar for selected round ]
 
 ┌ agent-console-card ──────────────────────────────────────┐
 │ Round 4 · only decisions that differed                   │
@@ -672,9 +911,10 @@ Causality is inside this frozen market, not a forecast of the real one.
 **Intuition rules:**
 
 1. **Tension is the hero, not the chart.** Three numbers with verbs (`fell` / `rose` / `left`). Share down and MRR up must be visually opposite (danger vs success) so the paradox is obvious.
-2. **Round pills are the selector.** `R1`…`R8` under the figure, large enough to tap. Chart points also select, but pills are the obvious control. Never require hovering a 4px dot.
-3. **Land on the plot round.** On load, select the first round where `|share_a − share_b|` jumps (Acme: **R4**). Trace and attribution bind to that round immediately.
-4. **Attribution is a sentence plus one bar.** “62% of this round’s new gap is buyer churn.” A stacked bar for the *selected* round beats eight unlabeled stacked columns. Optional: a quiet row of mini-bars for all rounds, with the selected one emphasized.
+2. **Round pills are the selector.** `R1`…`RN` under the figures, large enough to tap. Chart points also select, but pills are the obvious control. Never require hovering a 4px dot. N comes from `experiment.rounds`.
+3. **Land on the plot round.** On load, select the first round where `|share_a − share_b|` jumps (Grok Bot 8-round fixture: **R4**). Trace and attribution bind to that round immediately.
+4. **Four figures, not a dashboard.** (1) share trajectories A vs B, (2) MRR trajectories A vs B — **two small-multiples, not a Share/MRR toggle**. (3) persona outcomes: each of the five users stay/churn/switch in A vs B; optional WTP dots with the price line. (4) competitor price/decision path A vs B. Then the existing attribution bar + reason console for the selected round. No extra KPI tiles, no social-feed chart.
+5. **Attribution is a sentence plus one bar.** “62% of this round’s new gap is buyer churn.” A stacked bar for the *selected* round beats N unlabeled stacked columns.
 5. **Console is A over B for each agent who differed.** Same agent, two worlds, two reasons. Default filter `differed only`. `Show everyone` is an underlined secondary control, not a tab bar.
 6. **Narrative is above the fold** with citations as `buyer_3 · R4 · B`, clickable to that round.
 7. **Receipt stays on the paper**, methods at the bottom of the first viewport or a right rail on wide screens — visible in the 20s pitch, not in a footer the demo never scrolls to.
@@ -687,13 +927,15 @@ Follow `DESIGN-Guide.md`. This is an editorial experiment, not a product analyti
 |---|---|---|
 | Honesty strip | `announcement-bar` | 36px black: “Controlled experiment — not a forecast” |
 | Hypothesis headline | Product / section display | One line, tight tracking, white canvas. ~72px desktop, ~40px mobile. |
-| Run CTA | `button-primary` | Near-black pill. Label: `Run this experiment` |
+| Run CTA | `button-primary` | Near-black pill. Label: `Begin research` (shipped: `Run this experiment`) |
 | Fixture / prepared paper | `button-secondary` | Underlined text, no fill. Never a second filled pill. |
 | Live sentence | Body large, ink | Generated from form fields; updates as they type |
 | Method lock | `Receipt` + mono labels | Seed, hashes, adapter, runtime, model, `0 other variables changed` |
 | Finding numbers | Open stats on white | No cards-with-shadows. Verbs in the label. |
-| Twin trajectories | Figure on white | Hairline grid, no tooltip shadows. Series: `Run A · $49`, `Run B · $59` |
-| Round selector | Outlined pills / `button-pill-outline` | R1–R8. Selected = filled near-black or hairline+ink, not coral fill. |
+| Twin trajectories | Two figures on white | Share % and MRR $ small-multiples. Series: `Run A · $120`, `Run B · $144` |
+| Persona outcomes | Figure + `research-table` | Five users, A vs B action. Not a pie. |
+| Competitor path | Figure on white | Competitor price and decision over rounds |
+| Round selector | Outlined pills / `button-pill-outline` | R1–RN. Selected = filled near-black or hairline+ink, not coral fill. |
 | Attribution | One stacked bar + caption | Coral only as a *series* color for a band, never as the CTA. |
 | Reasons | `agent-console-card` | Dark panel, this is the product shot. |
 | Roster | `research-table` | Rule-separated rows, not a card grid. |
@@ -708,13 +950,14 @@ Tokens: `frontend/src/styles/tokens.css` from the guide. Fonts: Space Grotesk (d
 | Load `/` | Acme prefilled; left sentence reads the +20% fork; focus on primary CTA |
 | Edit price or delta | Sentence and receipt prices update immediately |
 | `Open the prepared Acme paper` | Client-side golden paper; receipt `adapter: fixture` |
-| `Run this experiment` with API up | Body swaps to Screen 2; SSE ticks; on `complete` go to `/experiments/{id}` |
-| `Run this experiment` with API down | Inline error + the fixture link. No fake rounds. |
+| `Begin research` with API up | Screen 2 (research then confirm). Until US-B9: Screen 3 SSE ticks; on `complete` go to `/experiments/{id}` |
+| `Begin research` with API down | Inline error + the fixture link. No fake rounds. |
+| `Confirm and run analysis` | Starts twin run; SSE ticks |
 | Load `/experiments/grok-bot-seed-42` | Paper with R4 selected, trace open on differed agents |
 | Click `R4` or a chart point | Chart marker, attribution sentence, and console all bind to that round |
 | Click a citation `buyer_3 · R4 · B` | Selects R4 and scrolls the console row into view |
 | `Show everyone` | Console lists stay/hold agents too; primary remains differed |
-| Toggle Share / MRR | Same selected round; y-axis and series swap |
+| Share / MRR toggle | Shipped on TwinChart. **US-D8** replaces with two always-visible figures. |
 
 Keyboard: Left/Right changes round. Enter on a citation activates it. Focus rings use `--color-focus-blue`.
 
@@ -755,7 +998,7 @@ type Adapter = "cursor" | "fixture";
 type VariableType = "price_change";
 type BuyerDecision = "stay" | "churn" | "switch";
 type CompetitorDecision = "hold" | "undercut" | "match";
-type Status = "created" | "running_a" | "running_b" | "attributing" | "complete" | "failed";
+type Status = "created" | "researching" | "roster_ready" | "running_a" | "running_b" | "attributing" | "complete" | "failed";
 
 interface CreateExperimentRequest { /* §9.1 */ }
 interface Receipt {
@@ -804,33 +1047,48 @@ Person B publishes a gist/file `frontend/src/types/contracts.ts` **and** matchin
 
 ```mermaid
 sequenceDiagram
-  actor U as User
+  actor U as Owner
   participant W as Web
   participant API as FastAPI
-  participant S as Store
+  participant L as Ledger
+  participant S as JSON export
+  participant Res as Research
   participant R as TwinRunner
   participant G as DecisionPort
-  U->>W: Submit Acme +20%
+  U->>W: Product + one action + rounds
   W->>API: POST /experiments
-  API->>S: experiment.json
-  API->>S: roster.json frozen
-  API-->>W: 202 {id}
+  API->>L: experiment.created
+  API->>S: export experiment.json
+  API->>Res: category research (once)
+  Res->>L: research.completed
+  API-->>W: 202 {id, researching}
+  API-->>W: roster_ready
+  U->>W: Confirm roster
+  W->>API: POST /experiments/id/start
+  API->>L: roster.frozen
+  API->>S: export roster.json
   W->>API: GET /events SSE
-  loop 8 rounds Run A
-    R->>G: decide(A, round, agent)
-    G-->>R: decision + reason
-    R->>S: append run_a
+  loop N rounds Run A
+    R->>G: gather 5 buyers on S0
+    G-->>R: decisions + reasons
+    R->>R: apply users → S1
+    R->>G: competitor on S1, then analyst
+    R->>L: observed + decided + round events
     API-->>W: round_complete A
   end
-  loop 8 rounds Run B
-    Note over R: identical inputs except price from round 1
-    R->>G: decide(B, round, agent)
-    G-->>R: decision + reason
+  R->>L: run.completed A
+  R->>S: export run_a.json
+  loop N rounds Run B
+    Note over R: identical personas and inputs except the one intervention
+    R->>G: same parallel then competitor pattern
+    R->>L: observed + decided + round events
     API-->>W: round_complete B
   end
+  R->>S: export run_b.json
   R->>R: alignment check
   R->>R: attribution + narrative
-  R->>S: attribution.json
+  R->>L: attribution.computed
+  R->>S: export attribution.json
   API-->>W: complete
   W->>API: GET /experiments/id
   API-->>W: ExperimentPaper
@@ -846,7 +1104,7 @@ sequenceDiagram
 | Track | Role name | Owns on disk | Demo beat they must be able to show |
 |---|---|---|---|
 | **A** | Agent Runtime Engineer | `backend/app/agents/*`, `cursor_client.py`, `roster/fixed_grok_bot.py`, prompts | One buyer JSON in / one JSON out via `AsyncAgent.prompt` |
-| **B** | Twin Engine + API | `twin_runner`, `attribution`, `store`, `http`, `contracts.py` | `GET` paper JSON for Acme with hashes and 0 other vars |
+| **B** | Twin Engine + API | `twin_runner`, `attribution`, `ledger`, `store`, `http`, `contracts.py` | `GET` paper JSON for Grok Bot with hashes and 0 other vars |
 | **C** | Setup & Shell | `web` layout, tokens, `/`, receipt, SSE progress | Acme form + receipt + “running round 4” |
 | **D** | Results Paper | charts, bars, trace, metrics on `/experiments/[id]` | Click round 4, see buyer_3 vs competitor reasons |
 
@@ -871,7 +1129,7 @@ sequenceDiagram
 | 5:30–end | Stand by for prompt fires | Golden path + health | Demo script on setup | Demo script on paper |
 | Cutoff | If Cursor is late, B ships fixture paper and receipt says `adapter: fixture` until SDK lands | Skip generated roster | Do not restyle D’s charts | Do not wait on live Cursor |
 
-**Cutoff rule (whole team):** if the fixed-role pipeline through the trace panel is not working by early afternoon, skip generated roster (§5.0 of spec). Fixture paper + honest receipt beats a half-wired Cursor SDK.
+**Cutoff rule (whole team):** do not start US-A8 research if the trace panel on the fixture paper is broken. Fixture paper + honest receipt beats a half-wired research path.
 
 ---
 
@@ -880,6 +1138,8 @@ sequenceDiagram
 Format: **ID · track · priority · estimate**. P0 is demo-blocking. P1 is same-day if P0 is green. P2 is explicit skip.
 
 Acceptance criteria are testable. A story is not done if any box is unchecked.
+
+**Next build order** (do not skip ahead; one branch per story): remaining P1 `US-B8` → `US-B10` → `US-A7` → `US-A9` → `US-A10` → `US-B9` → `US-A8` → `US-C8` → `US-C7` → `US-D8`.
 
 ---
 
@@ -953,7 +1213,7 @@ Acceptance:
 - [x] **Skipped (cutoff):** generated roster. Fixed Acme + working pipeline shipped instead.
 - [x] **Skipped**
 - [x] **Skipped**
-- [x] **Skip if US-A1–A4 or twin pipeline is not green by mid-afternoon** — applied; A5 not built.
+- [x] **Skip if US-A1–A4 or twin pipeline is not green by mid-afternoon** — applied; A5 not built. Superseded by US-A7 + US-A8 (catalogue + research/confirm).
 
 #### US-A6 · P1 · 1h — History summary is deterministic
 
@@ -966,6 +1226,64 @@ Acceptance:
 - [x] Same decision log → identical summary string
 - [x] No Cursor `Agent.prompt` inside summary builder
 
+#### US-A7 · P1 · 1.5h — Persona catalogue on roster
+
+**As** the twin runner  
+**I want** each agent to declare `class` + `archetype` + instance traits (including a reaction playbook)  
+**So that** five different users still share buyer verbs and chart bands.
+
+Acceptance:
+
+- [ ] `class` is `buyer` | `competitor` | `analyst` only — no business class
+- [ ] Buyer `archetype` is one of `price_sensitive` | `loyalist` | `value_seeker` | `enterprise` | `churn_risk`
+- [ ] Grok Bot fixture maps existing five buyers onto the catalogue; golden JSON still loads
+- [ ] Display `role` may remain as a derived label for old papers
+- [ ] pytest: roster rejects a fourth class
+
+#### US-A8 · P1 · 2h — Research agents propose the roster
+
+**As** a business owner  
+**I want** background research to propose 5 user personas, 1 competitor, and 1 analyst from my product text  
+**So that** agents react like that category, not like hardcoded Acme labels.
+
+Acceptance:
+
+- [ ] One (capped) Cursor research call given product fields returns a valid `Roster`
+- [ ] Playbooks + short `evidence` on each buyer; no raw tweet dump
+- [ ] Same product + seed → identical proposed roster
+- [ ] Fixture adapter skips the model and returns `fixed_grok_bot` as the proposal
+- [ ] Research does not run during Run A or Run B
+- [ ] Two different product descriptions produce different archetype mixes (not the same five labels)
+
+#### US-A9 · P1 · 0.5h — Token limits on every agent call
+
+**As** the platform  
+**I want** bounded prompts and reasons  
+**So that** N rounds × 7 agents × 2 runs stay affordable.
+
+Acceptance:
+
+- [ ] `reason` max 400 chars (min 40 remains)
+- [ ] Decision prompt contains distilled persona + snapshot only
+- [ ] Max 1 repair prompt, then fail the experiment
+- [ ] `history_summary` truncated from the left if over input cap
+- [ ] Settings documented in `settings.py` / README
+
+#### US-A10 · P1 · 1.5h — Parallel buyers, competitor on S1
+
+**As** the market  
+**I want** user agents to decide together on S0 and the competitor to react on S1  
+**So that** the competitor sees this round’s user reactions.
+
+Acceptance:
+
+- [ ] Five buyer `decide` calls in `asyncio.gather` on identical S0
+- [ ] Buyer decisions applied before competitor prompt
+- [ ] Competitor observation includes post-user share / churn (S1)
+- [ ] Same gather-then-competitor order on Run A and Run B
+- [ ] Unchanged observation fields still byte-identical across A and B
+- [ ] pytest replaces “sequential S0 for all” with this freeze
+
 ---
 
 ### Track B — Twin Engine + API
@@ -973,14 +1291,16 @@ Acceptance:
 #### US-B1 · P0 · 1h — Artifact store
 
 **As** the scientific record  
-**I want** each experiment written as five JSON files  
-**So that** a run can be replayed from disk.
+**I want** each experiment exported as five JSON files  
+**So that** a completed run can be read as a paper without replaying SQL.
 
 Acceptance:
 
 - [x] `data/experiments/{id}/` contains experiment, roster, run_a, run_b, attribution (attribution may appear last)
 - [x] Writes are atomic (write temp + rename)
 - [x] `GET .../artifacts/experiment` returns the file
+
+These files are **exports** of the ledger (ADR-2). Do not rewrite them per agent decision. Live process logging is US-B8.
 
 #### US-B2 · P0 · 2h — Twin runner, one variable
 
@@ -991,8 +1311,8 @@ Acceptance:
 Acceptance:
 
 - [x] Intervention applied only to B and only from `applies_from_round`
-- [x] Agent observation order frozen (start-of-round snapshot; buyers then competitor)
-- [x] 8 rounds both runs
+- [x] Agent observation order frozen (start-of-round snapshot; buyers then competitor) — **superseded by US-A10** (parallel buyers on S0, competitor on S1)
+- [x] 8 rounds both runs — **superseded by US-B10** (3–8, default 4; this fixture stays 8)
 - [x] Alignment check implemented; failure sets `status=failed`
 
 #### US-B3 · P0 · 1.5h — REST create + fetch paper
@@ -1005,7 +1325,7 @@ Acceptance:
 
 - [x] 202 on create, 200 paper when complete, 202 while running
 - [x] CORS for localhost:3000
-- [x] `CreateExperimentRequest` validation (rounds=8, price_change only)
+- [x] `CreateExperimentRequest` validation (rounds=8, price_change only) — **superseded by US-B10** (`rounds` 3–8)
 - [x] OpenAPI available at `/docs`
 
 #### US-B4 · P0 · 1.5h — Decision-diff attribution
@@ -1057,6 +1377,54 @@ Acceptance:
 
 - [x] `/health` reports adapter and cursor_configured
 - [x] Paper receipt includes adapter
+
+#### US-B8 · P1 · 2h — Postgres event ledger (Supabase)
+
+**As** the process record  
+**I want** every observation, decision, mutation, and round outcome appended in Supabase Postgres  
+**So that** we can audit a run without treating JSON files as a live log, and add `user_id` later without a schema rewrite.
+
+Acceptance:
+
+- [ ] `backend/db/schema.sql` matches architecture §7.5 (`experiments` + append-only `events`); `supabase/migrations/` is the same DDL
+- [ ] Schema applied on the Supabase project (SQL Editor or `supabase db push`); `DATABASE_URL` is the session pooler URI in settings
+- [ ] Twin runner appends the event types in §7.5; `agent.observed` and `agent.decided` are separate rows
+- [ ] JSON exports only at milestones (freeze, end of A, end of B, attribution)
+- [ ] Supabase down → experiment `failed`; export fail after durable events → `error=export_failed`
+- [ ] SSE reconnect uses `events.seq` as `Last-Event-ID`
+- [ ] No UPDATE/DELETE of event rows; `user_id` nullable; no projection tables; no anon-key access from the web app
+- [ ] pytest against a test database (or transactional fixtures) covers seq monotonicity and milestone-only JSON writes
+- [ ] When US-B9 lands, schema includes `researching` / `roster_ready` and `research.started` / `research.completed`
+
+#### US-B9 · P1 · 2h — Research then confirm, then start
+
+**As** a business owner  
+**I want** to see the inferred roster and confirm before the twin run  
+**So that** I am not charged for 2N rounds against a market I have not accepted.
+
+Acceptance:
+
+- [ ] `POST /experiments` → `status=researching` (202); does not start Run A
+- [ ] `GET` returns proposed roster at `roster_ready`
+- [ ] `POST /experiments/{id}/start` freezes roster, sets `running_a`, starts twin
+- [ ] SSE includes research progress then `round_complete`
+- [ ] Fixture path still requires confirm (proposal is the fixed Grok Bot roster)
+- [ ] Unchanged: only `price_change` live
+
+#### US-B10 · P1 · 1h — Tunable rounds (3–8, default 4)
+
+**As** a business owner  
+**I want** to choose how many rounds to run  
+**So that** a live Cursor experiment is cheaper than the 8-round fixture paper.
+
+Acceptance:
+
+- [ ] `CreateExperimentRequest.rounds` is `int` 3–8, default 4 (not `Literal[8]`)
+- [ ] Reject `rounds` outside 3–8 (422)
+- [ ] Reject `applies_from_round` not in `1..rounds`
+- [ ] Twin runner, attribution, metrics series, and SSE all use `experiment.rounds`
+- [ ] Grok Bot golden paper remains 8 rounds
+- [ ] `contracts.ts` matches; existing 8-round tests still pass via explicit `rounds: 8`
 
 ---
 
@@ -1139,6 +1507,33 @@ Acceptance:
 Acceptance:
 
 - [x] Setup copy says divergence is causal inside this simulation, not a forecast
+
+#### US-C7 · P1 · 1.5h — Roster confirm screen
+
+**As** a business owner  
+**I want** to see the five users, competitor, and analyst before analysis starts  
+**So that** I know who is in the frozen market.
+
+Acceptance:
+
+- [ ] After research, `/` swaps to confirm (not SSE twin ticks yet)
+- [ ] Rows: class, archetype, WTP or competitor price, short playbook line
+- [ ] Primary: `Confirm and run analysis`
+- [ ] Fixture proposal is the Grok Bot roster
+- [ ] DESIGN-Guide table, not a card grid
+
+#### US-C8 · P1 · 0.5h — Rounds control on Method strip
+
+**As** a business owner  
+**I want** to set rounds to 3–8 (default 4)  
+**So that** Method is not a locked 8.
+
+Acceptance:
+
+- [ ] Control on Method / receipt: integer 3–8, default 4
+- [ ] Live sentence / receipt show chosen N
+- [ ] POST body includes `rounds`
+- [ ] Seed and `0 other variables` stay locked
 
 ---
 
@@ -1227,6 +1622,21 @@ Acceptance:
 - [x] Failed status shows engine error
 - [x] Unknown id: honest empty, no fake Acme numbers
 
+#### US-D8 · P1 · 2h — Paper figures for business impact
+
+**As** a business owner  
+**I want** share, MRR, who moved, and how the competitor reacted — as figures  
+**So that** the paper is not three numbers and one toggled line.
+
+Acceptance:
+
+- [ ] Share A vs B and MRR A vs B are **two** small-multiple line charts (no Share/MRR toggle)
+- [ ] Round pills R1–RN from `experiment.rounds`; Grok Bot still lands on R4
+- [ ] Persona-outcomes figure: five users, A vs B stay/churn/switch
+- [ ] Competitor-path figure: competitor price and decision over rounds, A vs B
+- [ ] Existing attribution bar + reason console remain bound to the selected round
+- [ ] Follow DESIGN-Guide; no extra KPI dashboard
+
 #### US-D7 · P2 · skip — Export / print
 
 Skip. Screenshot the paper.
@@ -1310,7 +1720,9 @@ The hackathon is done when **all** of the following are true:
 6. Design guide: white canvas, pill CTA, no shadows, no coral primary button.
 7. If Cursor is live, `/health` says `cursor_configured: true` and the model id; if not, we do not claim it.
 
-Not done: a chart on mock data with a live-looking Cursor label. Not done: generated roster if the trace is broken. Not done: durable `create`+`send` agents that share memory across Run A and Run B.
+This revision is done when **additionally**: research → confirm → N-round twin (default 4) with parallel users and competitor on S1; every event in the ledger; paper shows share + MRR figures, persona outcomes, and competitor path; token caps enforced.
+
+Not done: a chart on mock data with a live-looking Cursor label. Not done: live social fetch during rounds. Not done: a business-agent persona. Not done: durable `create`+`send` agents that share memory across Run A and Run B.
 
 ---
 
@@ -1328,24 +1740,29 @@ Not done: a chart on mock data with a live-looking Cursor label. Not done: gener
 | Design drift (generic SaaS) | C | Tokens first; D reuses C’s buttons |
 | Merge conflicts on `page.tsx` | C vs D | C owns `/`, D owns `/experiments/[id]` only |
 | 30 live buyers, demo times out | A | 5 weighted buyers |
+| Live social during rounds | A | Research once; freeze playbook; ADR-8 |
 | Ungrounded narrative | B | Citations required, template fallback |
+| Token blow-up | A | ADR-11 caps; default 4 rounds |
 
 ---
 
 ## 17. Local run (target)
 
 ```bash
+# apply backend/db/schema.sql in Supabase SQL Editor (once)
+
 # api
-cd api && uvicorn app.main:app --reload --port 8000
+cd backend && uvicorn app.main:app --reload --port 8000
 
 # web
-cd web && npm run dev   # :3000, proxies or CORS to :8000
+cd frontend && npm run dev   # :3000, proxies or CORS to :8000
 ```
 
 ```
 CURSOR_API_KEY=crsr_...          # https://cursor.com/dashboard/api — pass explicitly in code
 CURSOR_MODEL=composer-2.5        # required for local; confirm via Cursor.models.list()
 DATA_DIR=../data/experiments
+DATABASE_URL=postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require
 DEFAULT_ADAPTER=fixture          # flip to cursor when A+B are green
 ```
 
@@ -1358,4 +1775,4 @@ DEFAULT_ADAPTER=fixture          # flip to cursor when A+B are green
 - A microservice mesh for a one-day demo.
 - A dashboard of KPIs disconnected from logged decisions.
 
-It is a **small causal instrument**: freeze, fork, differ, cite. Four people, two processes, five JSON files, one paper.
+It is a **small causal instrument**: research, confirm, freeze, fork, differ, cite. Two processes, a Supabase Postgres ledger, five JSON exports, one paper.

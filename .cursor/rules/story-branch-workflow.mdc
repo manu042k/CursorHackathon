@@ -11,7 +11,11 @@ When implementing this repo, do **one** `US-*` story at a time from [`architectu
 
 `US-X1` → `US-X2` → `US-A2` → `US-A4` → `US-B1` → `US-B2` → `US-B3` → `US-B4` → `US-B5` → `US-B6` → `US-A1` → `US-C1` → `US-C2` → `US-C3` → `US-D1` → `US-D2` → `US-D3` → `US-D4` → `US-C4` → `US-D5` → `US-D6` → `US-X3` → `US-X5` → `US-A3` → `US-X4`
 
-Then P1 only if P0 is green: `US-A5`, `US-A6`, `US-B7`, `US-C5`, `US-C6`. **Skip** `US-D7`. If the trace panel is not working, skip `US-A5` and ship fixture.
+Then remaining P1 if P0 is green: `US-A6`, `US-B7`, `US-B8`, `US-C5`, `US-C6`. **Skip** `US-D7`. **Skip** `US-A5` (superseded).
+
+Then this revision, in order: `US-B10` → `US-A7` → `US-A9` → `US-A10` → `US-B9` → `US-A8` → `US-C8` → `US-C7` → `US-D8`.
+
+If the trace panel is not working, do not start `US-A8`; ship fixture.
 
 Code goes in `frontend/` and `backend/` (not repo root). Follow §10 for UI. Follow `DESIGN-Guide.md` for website files.
 

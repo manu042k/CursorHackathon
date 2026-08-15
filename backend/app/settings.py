@@ -1,4 +1,4 @@
-"""Env settings. Never commit CURSOR_API_KEY."""
+"""Env settings. Never commit CURSOR_API_KEY or DATABASE_URL."""
 
 from __future__ import annotations
 
@@ -23,3 +23,5 @@ _load_dotenv()
 CURSOR_API_KEY = os.environ.get("CURSOR_API_KEY", "")
 CURSOR_MODEL = os.environ.get("CURSOR_MODEL", "composer-2.5")
 DEFAULT_ADAPTER = os.environ.get("DEFAULT_ADAPTER", "fixture")
+# Supabase session pooler URI (port 5432) with sslmode=require. Empty until US-B8 wires the ledger.
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
