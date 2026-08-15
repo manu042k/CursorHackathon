@@ -239,6 +239,69 @@
   display: inline-block;
 }
 
+.agent-console-card {
+  background: var(--color-primary);
+  color: var(--color-on-dark);
+  border-radius: var(--radius-sm);
+  padding: var(--space-xl);
+  margin: 0 0 var(--space-section);
+}
+
+.agent-console-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-lg);
+}
+
+.agent-console-card__head p {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  letter-spacing: 0.28px;
+}
+
+.button-secondary--on-dark {
+  color: var(--color-on-dark);
+}
+
+.agent-console-card__citations {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  padding: 0;
+  margin: 0 0 var(--space-xl);
+}
+
+.agent-console-card__agent {
+  border-top: 1px solid #2c2c33;
+  padding: var(--space-lg) 0;
+}
+
+.agent-console-card__agent h3 {
+  margin: 0 0 var(--space-sm);
+  font-size: var(--text-body);
+  font-weight: 500;
+}
+
+.agent-console-card__run {
+  margin: 0 0 var(--space-md);
+  font-size: var(--text-body);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.agent-console-card__run span {
+  display: inline-block;
+  min-width: 4.5rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: 0.28px;
+  color: var(--color-muted);
+}
+
 @media (max-width: 700px) {
   .metric-cards {
     grid-template-columns: 1fr;
