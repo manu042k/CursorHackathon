@@ -1,10 +1,18 @@
 # Butterfly Market
+# Team: TwinRun
+# Project: Butterfly Market
+We execute twin-run A/B market experiments over 3 to 8 rounds (default 4). Each round executes a fixed 7-agent roster: 5 user personas, 1 competitor, and 1 analyst.
 
 A controlled twin-run market experiment: same seed, same frozen roster, **one** variable changed. Divergence is causal *inside the simulation*. This is not a forecast.
 
 The **business owner** (platform user) enters a product, picks one action and how many rounds (3–8, default 4), confirms a researched roster of **5 user personas + 1 competitor + 1 analyst**, then reads a paper of what that change did. There is no business-agent persona.
 
 **Shipped today:** Grok Bot fixture paper (8 rounds), `POST /experiments` starts the twin run immediately, buyers run sequentially. **Next:** research → confirm, parallel users, competitor after users, tunable rounds, extra figures — see [`architecture.md`](architecture.md) §1.1 and §14.
+
+# How we used Cursor
+We used the Cursor SDK to drive our agent decisions and the Cursor IDE to accelerate full-stack development.
+# How we used Grok 4.6
+We integrated Grok 4.6 via the xAI API (model ID: `grok-4.6`) as the central reasoning engine ("brain") driving the individual persona agents, market analysis decisions, and final paper generation.
 
 ## Ports
 
@@ -29,7 +37,6 @@ DATABASE_URL=
 - `CURSOR_MODEL` — model id reported on `/health` and the paper receipt
 - `DEFAULT_ADAPTER=fixture` — fixture-only demo; no Cursor calls
 - `DATABASE_URL` — Supabase session-pooler Postgres URI (`sslmode=require`). JSON under `data/experiments/` is a paper export, not the live log. Never put the anon or service-role key in the frontend.
-- Decision reasons are 40–400 characters (`MAX_REASON_CHARS`). Round history in the prompt is truncated from the oldest round first (`MAX_HISTORY_CHARS`, default 800).
 - Research (US-A8, `adapter=cursor`): Reddit + web search only, then hygiene filters (ADR-12). Optional: `RESEARCH_MAX_AGE_DAYS`, `RESEARCH_MIN_SCORE`, `RESEARCH_MIN_COMMENTS`, `RESEARCH_MAX_ITEMS_PER_SOURCE`, `RESEARCH_MIN_KEEP`. Fixture adapter skips fetch.
 - Ports stay 8000 / 3000 unless you change the start commands
 
