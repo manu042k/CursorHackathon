@@ -217,6 +217,9 @@ class AgentDecisionRequest(FrozenModel):
     persona: dict[str, Any] = Field(default_factory=dict)
     status: str = "subscribed"
     history_summary: str = ""
+    share: float | None = None
+    mrr: float | None = None
+    wtp_gap: float | None = None
 
 
 class AgentDecision(FrozenModel):
