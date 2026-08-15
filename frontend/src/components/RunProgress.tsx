@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { OrchestrationGraph } from "@/components/OrchestrationGraph";
 import { TrajectoryChart } from "@/components/TrajectoryChart";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RUN_ROUNDS } from "@/types/contracts";
 import type { DecisionEvent, RoundCompleteEvent } from "@/types/contracts";
 
@@ -33,21 +36,28 @@ export function RunProgress({
   const live = [...decisions].reverse().slice(0, 8);
 
   return (
-    <section className="run-progress">
-      <p className="setup__kicker">The fork is running</p>
-      <h1 className="setup__sentence">
-        Running · ${basePrice} vs ${forkedPrice}
-      </h1>
+    <section className="mx-auto max-w-5xl space-y-6 px-6 py-10">
+      <div className="space-y-2">
+        <p className="text-sm text-muted-foreground">The fork is running</p>
+        <h1 className="text-3xl font-semibold tracking-tight">
+          Running · ${basePrice} vs ${forkedPrice}
+        </h1>
+      </div>
       {latest ? (
         <p className="run-progress__now">
-          Run {latest.run_id} · round {latest.round} / {rounds}
+          <Badge variant="outline" className="w-fit font-mono font-normal tracking-wide">
+            Run {latest.run_id} · round {latest.round} / {rounds}
+          </Badge>
           <span>
             share {latest.share.toFixed(0)}% · MRR ${latest.mrr.toFixed(0)}
           </span>
         </p>
       ) : latestDecision ? (
         <p className="run-progress__now">
-          Run {latestDecision.run_id} · {latestDecision.agent_id} is deciding round {latestDecision.round}
+          <Badge variant="outline" className="w-fit font-mono font-normal tracking-wide">
+            Run {latestDecision.run_id} · {latestDecision.agent_id}
+          </Badge>
+          <span>deciding round {latestDecision.round}</span>
         </p>
       ) : (
         <p className="run-progress__now">Waiting for the first round…</p>
@@ -77,26 +87,34 @@ export function RunProgress({
       />
 
       <div className="run-progress__cols">
-        <div>
-          <h2>Run A · baseline ${basePrice}</h2>
-          <ol>
-            {Array.from({ length: rounds }, (_, i) => i + 1).map((round) => (
-              <li key={`a-${round}`} className={a.includes(round) ? "is-filled" : ""}>
-                R{round}
-              </li>
-            ))}
-          </ol>
-        </div>
-        <div>
-          <h2>Run B · ${forkedPrice}</h2>
-          <ol>
-            {Array.from({ length: rounds }, (_, i) => i + 1).map((round) => (
-              <li key={`b-${round}`} className={b.includes(round) ? "is-filled" : ""}>
-                R{round}
-              </li>
-            ))}
-          </ol>
-        </div>
+        <Card className="border-border">
+          <CardHeader>
+            <CardTitle className="text-2xl">Run A · baseline ${basePrice}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ol>
+              {Array.from({ length: rounds }, (_, i) => i + 1).map((round) => (
+                <li key={`a-${round}`} className={a.includes(round) ? "is-filled" : ""}>
+                  R{round}
+                </li>
+              ))}
+            </ol>
+          </CardContent>
+        </Card>
+        <Card className="border-border">
+          <CardHeader>
+            <CardTitle className="text-2xl">Run B · ${forkedPrice}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ol>
+              {Array.from({ length: rounds }, (_, i) => i + 1).map((round) => (
+                <li key={`b-${round}`} className={b.includes(round) ? "is-filled" : ""}>
+                  R{round}
+                </li>
+              ))}
+            </ol>
+          </CardContent>
+        </Card>
       </div>
 
       <section className="run-progress__feed" aria-label="Decision log">
@@ -123,17 +141,17 @@ export function RunProgress({
 
       {a.includes(rounds) && b.includes(rounds) ? (
         <p className="finding__next">
-          <Link href={`/experiments/${experimentId}`} className="button-primary">
-            See why it moved
-          </Link>
+          <Button asChild>
+            <Link href={`/experiments/${experimentId}`}>See why it moved</Link>
+          </Button>
         </p>
       ) : null}
       {failed ? (
         <p className="setup__error" role="alert">
           {failed}{" "}
-          <Link href="/new" className="button-secondary">
-            New experiment
-          </Link>
+          <Button asChild variant="outline" className="button-secondary">
+            <Link href="/new">New experiment</Link>
+          </Button>
         </p>
       ) : null}
     </section>

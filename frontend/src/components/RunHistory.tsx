@@ -4,6 +4,25 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { listExperiments } from "@/lib/api";
 import type { ExperimentListItem, Status } from "@/types/contracts";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 function statusLabel(status: Status): string {
   if (status === "complete") return "Complete";
@@ -11,10 +30,10 @@ function statusLabel(status: Status): string {
   return "Running";
 }
 
-function statusClass(status: Status): string {
-  if (status === "complete") return "runs-row__status is-complete";
-  if (status === "failed") return "runs-row__status is-failed";
-  return "runs-row__status is-running";
+function statusVariant(status: Status): "secondary" | "destructive" | "outline" {
+  if (status === "complete") return "secondary";
+  if (status === "failed") return "destructive";
+  return "outline";
 }
 
 function when(iso: string): string {
@@ -47,33 +66,71 @@ export function RunHistory() {
   }, []);
 
   return (
-    <main className="runs">
-      <p className="shell-kicker">Workspace</p>
-      <div className="runs__head">
-        <h1 className="shell-headline">Runs</h1>
-        <Link href="/new" className="button-primary">
-          New experiment
-        </Link>
+    <main className="mx-auto max-w-5xl px-6 py-10">
+      <div className="mb-6 flex items-end justify-between gap-4">
+        <div>
+          <p className="text-sm text-muted-foreground">Workspace</p>
+          <h1 className="text-3xl font-semibold tracking-tight">Runs</h1>
+        </div>
+        <Button asChild>
+          <Link href="/new">New experiment</Link>
+        </Button>
       </div>
       {items == null ? (
-        <p className="runs__empty">Loading…</p>
+        <Card>
+          <CardContent className="space-y-3 pt-6">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-4/5" />
+          </CardContent>
+        </Card>
       ) : items.length === 0 ? (
-        <p className="runs__empty">No runs yet.</p>
+        <Card>
+          <CardHeader>
+            <CardTitle>No runs yet</CardTitle>
+            <CardDescription>
+              Start a twin run. The paper will land here when both worlds finish.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button asChild>
+              <Link href="/new">New experiment</Link>
+            </Button>
+          </CardFooter>
+        </Card>
       ) : (
-        <ul className="runs__table">
-          {items.map((item) => (
-            <li key={item.id}>
-              <Link href={`/experiments/${item.id}`} className="runs-row">
-                <span className="runs-row__name">{item.product_name}</span>
-                <span className="runs-row__meta">
-                  {item.variable_delta} · ${Math.round(item.current_price)}
-                </span>
-                <span className={statusClass(item.status)}>{statusLabel(item.status)}</span>
-                <span className="runs-row__when">{when(item.updated_at)}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <Card>
+          <CardContent className="px-0 pt-2">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="px-6">Product</TableHead>
+                  <TableHead>Change</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="px-6">When</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="px-6 font-medium">
+                      <Link href={`/experiments/${item.id}`} className="hover:underline">
+                        {item.product_name}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {item.variable_delta} · ${Math.round(item.current_price)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={statusVariant(item.status)}>{statusLabel(item.status)}</Badge>
+                    </TableCell>
+                    <TableCell className="px-6 text-muted-foreground">{when(item.updated_at)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
     </main>
   );

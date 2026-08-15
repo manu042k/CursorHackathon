@@ -1,71 +1,37 @@
-.landing {
-  max-width: 880px;
-  margin: 0 auto;
-  padding: var(--space-section) var(--space-xl);
+.landing-console__chart {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: #111113;
+  border-radius: 8px;
 }
 
-.landing__kicker {
-  margin: 0 0 var(--space-md);
-  font-family: var(--font-mono);
-  font-size: var(--text-caption);
-  letter-spacing: 0.28px;
-  color: var(--color-muted);
-}
-
-.landing__title {
-  margin: 0 0 var(--space-xl);
-  font-family: var(--font-display);
-  font-size: clamp(40px, 7vw, 72px);
-  font-weight: 400;
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
-
-.landing__lead {
-  margin: 0 0 var(--space-xl);
-  max-width: 32rem;
-  font-size: var(--text-body-lg);
-  line-height: 1.4;
-  color: var(--color-body-muted);
-}
-
-.landing__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-xl);
-  margin: 0 0 var(--space-section);
-}
-
-.landing__points {
+.landing-console__agents {
   list-style: none;
   padding: 0;
-  margin: 0;
+  margin: 16px 0 0;
+}
+
+.landing-console__agents li {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-xxl);
-  border-top: 1px solid var(--color-hairline);
-  padding-top: var(--space-xxl);
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid #27272a;
+  font-size: 12px;
 }
 
-.landing__points li {
-  margin: 0;
-  color: var(--color-slate);
-  font-size: var(--text-caption);
-  line-height: 1.5;
+.landing-console__agents .is-stay {
+  color: #d4d4d8;
+  font-style: normal;
 }
 
-.landing__points span {
-  display: block;
-  margin-bottom: var(--space-sm);
-  font-family: var(--font-mono);
-  font-size: var(--text-micro);
-  letter-spacing: 0.28px;
-  color: var(--color-ink);
+.landing-console__agents .is-churn {
+  color: #fca5a5;
+  font-style: normal;
 }
 
-@media (max-width: 700px) {
-  .landing__points {
-    grid-template-columns: 1fr;
-  }
+.landing-console__agents .is-match {
+  color: #a1a1aa;
+  font-style: normal;
 }
