@@ -1,10 +1,17 @@
-# Counterfactual Replay
+# Team: TwinRun
+# Project: Butterfly Market
+We execute twin-run A/B market experiments over 3 to 8 rounds (default 4). Each round executes a fixed 7-agent roster: 5 user personas, 1 competitor, and 1 analyst.
 
 A controlled twin-run market experiment: same seed, same frozen roster, **one** variable changed. Divergence is causal *inside the simulation*. This is not a forecast.
 
 The **business owner** (platform user) enters a product, picks one action and how many rounds (3–8, default 4), confirms a researched roster of **5 user personas + 1 competitor + 1 analyst**, then reads a paper of what that change did. There is no business-agent persona.
 
 **Shipped today:** Grok Bot fixture paper (8 rounds), `POST /experiments` starts the twin run immediately, buyers run sequentially. **Next:** research → confirm, parallel users, competitor after users, tunable rounds, extra figures — see [`architecture.md`](architecture.md) §1.1 and §14.
+
+# How we used Cursor
+We used the Cursor SDK to drive our agent decisions and the Cursor IDE to accelerate full-stack development.
+# How we used Grok 4.6
+We integrated Grok 4.6 via the xAI API (model ID: `grok-4.6`) as the central reasoning engine ("brain") driving the individual persona agents, market analysis decisions, and final paper generation.
 
 ## Ports
 
