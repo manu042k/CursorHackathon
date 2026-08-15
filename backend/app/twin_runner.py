@@ -18,6 +18,7 @@ from app.contracts import (
     Status,
     VariableType,
 )
+from app.history import history_summary
 from app.market import Market, market_from_roster, parse_price_delta
 from app.roster.fixed_acme import build_roster
 from app.store import write_artifact
@@ -115,6 +116,7 @@ async def _run_one(
                 competitor_price=snap_comp,
                 persona=dict(agent.traits),
                 status=status,
+                history_summary=history_summary(agent_logs, round_n),
             )
             call_order.append((run_id.value, agent_id, round_n))
             decision = await decide_validated(adapter, request)
