@@ -37,6 +37,22 @@
   margin: 0 0 var(--space-xl);
 }
 
+.skeleton__rule {
+  height: 12px;
+  width: 40%;
+  background: var(--color-soft-stone);
+  margin-bottom: var(--space-lg);
+}
+
+.skeleton__rule--wide {
+  width: 80%;
+  height: 28px;
+}
+
+.finding__error {
+  color: var(--color-error);
+}
+
 .metric-cards {
   list-style: none;
   display: grid;
