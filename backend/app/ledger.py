@@ -57,7 +57,6 @@ class InMemoryLedger:
 class PostgresLedger:
     def __init__(self, conn):
         self._conn = conn
-        self._ensured: set[str] = set()
 
     def append(
         self,
@@ -71,39 +70,19 @@ class PostgresLedger:
     ) -> int:
         if event_type in OBSERVE_DECIDE and not payload:
             raise ValueError("payload required for observe/decide")
-        
+
         with self._conn.cursor() as cur:
-            # Ensure experiment exists (minimal stub to satisfy FK)
-            if experiment_id not in self._ensured:
-                cur.execute(
-                    """
-                    INSERT INTO experiments (
-                        id, status, product_name, product_description,
-                        current_price, market_size, competitor_count, competitor_price,
-                        buyer_price_sensitivity, rounds, random_seed,
-                        variable_type, variable_delta, applies_from_round, adapter
-                    ) VALUES (
-                        %s, 'created', '', '', 0, 0, 0, 0, '', 8, 0, '', '', 1, 'fixture'
-                    ) ON CONFLICT (id) DO NOTHING
-                    """,
-                    (experiment_id,)
-                )
-                self._ensured.add(experiment_id)
-            
-            # Get next seq for this experiment
             cur.execute(
                 "SELECT COALESCE(MAX(seq), 0) + 1 FROM events WHERE experiment_id = %s",
-                (experiment_id,)
+                (experiment_id,),
             )
             seq = cur.fetchone()[0]
-            
-            # Insert event
             cur.execute(
                 """
                 INSERT INTO events (experiment_id, seq, event_type, run_id, round, agent_id, payload)
                 VALUES (%s, %s, %s::event_type, %s::run_id, %s, %s, %s)
                 """,
-                (experiment_id, seq, event_type, run_id, round, agent_id, json.dumps(payload))
+                (experiment_id, seq, event_type, run_id, round, agent_id, json.dumps(payload)),
             )
             self._conn.commit()
             return seq

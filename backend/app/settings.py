@@ -23,5 +23,5 @@ _load_dotenv()
 CURSOR_API_KEY = os.environ.get("CURSOR_API_KEY", "")
 CURSOR_MODEL = os.environ.get("CURSOR_MODEL", "composer-2.5")
 DEFAULT_ADAPTER = os.environ.get("DEFAULT_ADAPTER", "fixture")
-# Supabase session pooler URI (port 5432) with sslmode=require. Empty until US-B8 wires the ledger.
+# Supabase session pooler URI (port 5432) with sslmode=require. Empty → in-memory ledger.
 DATABASE_URL = os.environ.get("DATABASE_URL", "")

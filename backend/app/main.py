@@ -11,6 +11,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+import psycopg
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -79,17 +80,48 @@ def _execute(experiment_id: str, body: CreateExperimentRequest) -> None:
     def on_decision(payload):
         registry.append_event(experiment_id, "decision", payload)
 
-    # Construct ledger
     ledger = None
+    conn = None
     if settings.DATABASE_URL:
         try:
-            import psycopg
             conn = psycopg.connect(settings.DATABASE_URL)
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO experiments (
+                        id, status, product_name, product_description,
+                        current_price, market_size, competitor_count, competitor_price,
+                        buyer_price_sensitivity, rounds, random_seed,
+                        variable_type, variable_delta, applies_from_round, adapter
+                    ) VALUES (
+                        %s, 'created', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    ) ON CONFLICT (id) DO NOTHING
+                    """,
+                    (
+                        experiment_id,
+                        body.product_name,
+                        body.product_description,
+                        body.current_price,
+                        body.market_size,
+                        body.competitor_count,
+                        body.competitor_price,
+                        body.buyer_price_sensitivity.value,
+                        body.rounds,
+                        body.random_seed,
+                        body.variable_type.value,
+                        body.variable_delta,
+                        body.applies_from_round,
+                        body.adapter.value,
+                    ),
+                )
+                conn.commit()
             ledger = PostgresLedger(conn)
-        except Exception as exc:
+        except psycopg.Error as exc:
             registry.set_status(experiment_id, Status.failed)
-            registry.errors[experiment_id] = f"database connection failed: {exc}"
-            registry.append_event(experiment_id, "failed", {"error": f"database: {exc}"})
+            registry.errors[experiment_id] = f"database connection failed: {type(exc).__name__}"
+            registry.append_event(
+                experiment_id, "failed", {"error": f"database: {type(exc).__name__}"}
+            )
             return
     else:
         ledger = InMemoryLedger()
@@ -126,6 +158,9 @@ def _execute(experiment_id: str, body: CreateExperimentRequest) -> None:
         registry.set_status(experiment_id, Status.failed)
         registry.errors[experiment_id] = str(exc)
         registry.append_event(experiment_id, "failed", {"error": str(exc)})
+    finally:
+        if conn:
+            conn.close()
 
 
 @app.post("/experiments", status_code=202, response_model=CreateExperimentResponse)
