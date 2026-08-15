@@ -22,10 +22,19 @@
 }
 
 .finding__narrative {
-  margin: var(--space-xl) 0;
+  margin: var(--space-xl) 0 var(--space-md);
   font-size: var(--text-body-lg);
   line-height: 1.4;
   max-width: 40rem;
+}
+
+.finding__citations {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-lg);
+  padding: 0;
+  margin: 0 0 var(--space-xl);
 }
 
 .metric-cards {
