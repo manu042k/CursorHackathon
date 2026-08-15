@@ -18,6 +18,7 @@ from app.contracts import (
     Status,
     VariableType,
 )
+from app import settings
 from app.history import history_summary
 from app.ledger import Ledger
 from app.market import Market, market_from_roster, parse_price_delta
@@ -122,7 +123,9 @@ async def _run_one(
                 competitor_price=snap_comp,
                 persona=persona_payload(agent),
                 status=status,
-                history_summary=history_summary(agent_logs, round_n),
+                history_summary=history_summary(
+                    agent_logs, round_n, max_chars=settings.MAX_HISTORY_CHARS
+                ),
             )
             call_order.append((run_id.value, agent_id, round_n))
             decision = await decide_validated(adapter, request)

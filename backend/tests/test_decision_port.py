@@ -8,7 +8,7 @@ import inspect
 import pytest
 
 from app.agents.fixture import FixtureAdapter
-from app.agents.port import DecisionError, DecisionPort, parse_decision_json, validate_decision
+from app.agents.port import DecisionError, DecisionPort, parse_decision_json, validate_decision, REASON_MAX_LEN
 from app.contracts import AgentDecision, AgentDecisionRequest, RunId
 from app.roster.fixed_grok_bot import FORK_PRICE, LIST_PRICE
 
@@ -104,3 +104,10 @@ def test_fixture_adapter_stay_churn_switch():
         validated = validate_decision(decision)
         assert validated.decision == decision.decision
         assert len(validated.reason) >= 40
+
+
+def test_reason_longer_than_400_rejected():
+    reason = "Price $" + ("x" * 400)
+    assert len(reason) > REASON_MAX_LEN
+    with pytest.raises(DecisionError, match="too long"):
+        validate_decision(AgentDecision(decision="stay", reason=reason, confidence=0.5))
