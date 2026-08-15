@@ -57,6 +57,38 @@
   margin: var(--space-section) 0 0;
 }
 
+.finding__summary {
+  margin: var(--space-section) 0 0;
+  padding-top: var(--space-xxl);
+  border-top: 1px solid var(--color-hairline);
+}
+
+.finding__summary h2 {
+  margin: 0 0 var(--space-lg);
+  font-size: var(--text-feature);
+  font-weight: 400;
+}
+
+.finding__summary p,
+.finding__summary li {
+  max-width: 40rem;
+  line-height: 1.5;
+}
+
+.finding__summary ul {
+  margin: var(--space-lg) 0;
+  padding-left: 1.2rem;
+}
+
+.finding__summary-claim {
+  font-size: var(--text-body-lg);
+}
+
+.finding__summary-note {
+  color: var(--color-muted);
+  font-size: var(--text-caption);
+}
+
 .roster-preview {
   margin: 0 0 var(--space-section);
 }
