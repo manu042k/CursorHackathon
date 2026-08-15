@@ -15,6 +15,19 @@ export function FindingPaper({ paper }: { paper: ExperimentPaper }) {
     <article className="finding">
       <PaperHeader paper={paper} />
       <p className="finding__narrative">{paper.summary_narrative.text}</p>
+      <ul className="finding__citations">
+        {paper.summary_narrative.citations.map((citation) => (
+          <li key={`${citation.agent_id}-${citation.round}-${citation.run_id}`}>
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={() => setSelectedRound(citation.round)}
+            >
+              {citation.agent_id} · R{citation.round} · {citation.run_id}
+            </button>
+          </li>
+        ))}
+      </ul>
       <MetricCards paper={paper} />
       <TwinChart
         paper={paper}
