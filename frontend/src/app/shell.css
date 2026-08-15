@@ -105,3 +105,14 @@
 .receipt dt {
   color: var(--color-muted);
 }
+
+.button-secondary {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  background: none;
+  border: 0;
+  padding: 8px 0;
+  font-size: var(--text-body);
+  cursor: pointer;
+}
