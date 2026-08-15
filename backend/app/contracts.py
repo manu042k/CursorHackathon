@@ -148,6 +148,8 @@ class RosterAgent(FrozenModel):
     role: str
     weight: float
     traits: dict[str, Any] = Field(default_factory=dict)
+    agent_class: Literal["buyer", "competitor", "analyst"] | None = None
+    archetype: str | None = None
 
 
 class Roster(FrozenModel):
