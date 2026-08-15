@@ -11,3 +11,7 @@ frontend/.next/
 backend/.venv/
 backend/**/__pycache__/
 backend/*.egg-info/
+
+.idea/
+.idea/*
+
