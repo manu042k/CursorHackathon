@@ -1,0 +1,125 @@
+{
+  "method": "decision_diff_v1",
+  "divergence_by_round": [
+    {
+      "round": 1,
+      "delta": 0,
+      "top_contributors": []
+    },
+    {
+      "round": 2,
+      "delta": 2,
+      "top_contributors": [
+        {
+          "agent_id": "buyer_1",
+          "contribution_pct": 100,
+          "reason": "Price now $59 is $17 above my willingness to pay of $42; competitor is $45. I leave."
+        }
+      ]
+    },
+    {
+      "round": 3,
+      "delta": 5,
+      "top_contributors": [
+        {
+          "agent_id": "buyer_1",
+          "contribution_pct": 20,
+          "reason": "Price now $59 is $17 above my willingness to pay of $42; competitor is $45. I leave."
+        },
+        {
+          "agent_id": "competitor",
+          "contribution_pct": 55,
+          "reason": "Your price is $59 and share is 74%; I hold at $45 and wait one more round."
+        },
+        {
+          "agent_id": "buyer_4",
+          "contribution_pct": 25,
+          "reason": "Price $49 is $13 under my willingness to pay of $62; loyalty 0.7. I stay subscribed."
+        }
+      ]
+    },
+    {
+      "round": 4,
+      "delta": 9,
+      "top_contributors": [
+        {
+          "agent_id": "buyer_3",
+          "contribution_pct": 62,
+          "reason": "Price $59 is at or above my willingness to pay of $55; I switch to the competitor at $45."
+        },
+        {
+          "agent_id": "competitor",
+          "contribution_pct": 38,
+          "reason": "Your share is 69% after the $59 price; I match $59 to stop further loss."
+        }
+      ]
+    },
+    {
+      "round": 5,
+      "delta": 10,
+      "top_contributors": [
+        {
+          "agent_id": "buyer_2",
+          "contribution_pct": 71,
+          "reason": "Price now $59 is $7 above my willingness to pay of $52; competitor is $45. I leave."
+        },
+        {
+          "agent_id": "competitor",
+          "contribution_pct": 19,
+          "reason": "Your share is 67% after the $59 price; I match $59 to stop further loss."
+        },
+        {
+          "agent_id": "buyer_5",
+          "contribution_pct": 10,
+          "reason": "Price $59 is $13 under my willingness to pay of $72; loyalty 0.85. I stay subscribed."
+        }
+      ]
+    },
+    {
+      "round": 6,
+      "delta": 10,
+      "top_contributors": [
+        {
+          "agent_id": "buyer_4",
+          "contribution_pct": 70,
+          "reason": "Price $59 is $3 under my willingness to pay of $62; loyalty 0.7. I stay subscribed."
+        },
+        {
+          "agent_id": "buyer_2",
+          "contribution_pct": 18,
+          "reason": "Price now $59 is $7 above my willingness to pay of $52; competitor is $45. I leave."
+        },
+        {
+          "agent_id": "competitor",
+          "contribution_pct": 12,
+          "reason": "Your share is 66% after the $59 price; I match $59 to stop further loss."
+        }
+      ]
+    },
+    {
+      "round": 7,
+      "delta": 10,
+      "top_contributors": []
+    },
+    {
+      "round": 8,
+      "delta": 10,
+      "top_contributors": []
+    }
+  ],
+  "summary_narrative": {
+    "text": "Raising price 20% costs 10 points of share and still adds $51 MRR, because the buyers who left were already at or below willingness-to-pay of $52\u2013$58. Remaining customers are the loyal segment.",
+    "citations": [
+      {
+        "agent_id": "buyer_3",
+        "round": 4,
+        "run_id": "B"
+      },
+      {
+        "agent_id": "competitor",
+        "round": 4,
+        "run_id": "B"
+      }
+    ]
+  }
+}

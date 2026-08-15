@@ -1,0 +1,108 @@
+{
+  "agent_roles": [
+    {
+      "role": "price_sensitive_buyer",
+      "count": 3,
+      "traits": {
+        "willingness_to_pay_range": [
+          35,
+          55
+        ],
+        "loyalty": "low"
+      }
+    },
+    {
+      "role": "enterprise_buyer",
+      "count": 2,
+      "traits": {
+        "willingness_to_pay_range": [
+          60,
+          90
+        ],
+        "loyalty": "high"
+      }
+    },
+    {
+      "role": "incumbent_competitor",
+      "count": 1,
+      "traits": {
+        "current_price": 45
+      }
+    },
+    {
+      "role": "analyst",
+      "count": 1,
+      "traits": {
+        "meta": true
+      }
+    }
+  ],
+  "agents": [
+    {
+      "agent_id": "buyer_1",
+      "role": "price_sensitive_buyer",
+      "weight": 8,
+      "traits": {
+        "willingness_to_pay": 42,
+        "loyalty_score": 0.15,
+        "price_sensitivity": "high"
+      }
+    },
+    {
+      "agent_id": "buyer_2",
+      "role": "price_sensitive_buyer",
+      "weight": 6,
+      "traits": {
+        "willingness_to_pay": 52,
+        "loyalty_score": 0.3,
+        "price_sensitivity": "high"
+      }
+    },
+    {
+      "agent_id": "buyer_3",
+      "role": "price_sensitive_buyer",
+      "weight": 5,
+      "traits": {
+        "willingness_to_pay": 55,
+        "loyalty_score": 0.35,
+        "price_sensitivity": "high"
+      }
+    },
+    {
+      "agent_id": "buyer_4",
+      "role": "enterprise_buyer",
+      "weight": 6,
+      "traits": {
+        "willingness_to_pay": 62,
+        "loyalty_score": 0.7,
+        "price_sensitivity": "medium"
+      }
+    },
+    {
+      "agent_id": "buyer_5",
+      "role": "enterprise_buyer",
+      "weight": 5,
+      "traits": {
+        "willingness_to_pay": 72,
+        "loyalty_score": 0.85,
+        "price_sensitivity": "low"
+      }
+    },
+    {
+      "agent_id": "competitor",
+      "role": "incumbent_competitor",
+      "weight": 0,
+      "traits": {
+        "current_price": 45
+      }
+    },
+    {
+      "agent_id": "analyst",
+      "role": "analyst",
+      "weight": 0,
+      "traits": {
+        "meta": true
+      }
+    }
+  ]
+}
