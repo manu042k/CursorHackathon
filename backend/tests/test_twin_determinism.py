@@ -24,7 +24,7 @@ def _grok(**overrides) -> CreateExperimentRequest:
         "competitor_count": 1,
         "competitor_price": COMPETITOR_PRICE,
         "buyer_price_sensitivity": "medium",
-        "rounds": 8,
+        "rounds": 4,
         "random_seed": 42,
         "variable_type": "price_change",
         "variable_delta": "+20%",
@@ -70,18 +70,18 @@ def test_parse_plus_twenty_percent_is_fork_price():
     assert parse_price_delta(49, "+20%") == 59
 
 
-def test_eight_rounds_both_runs(tmp_path):
+def test_four_rounds_both_runs(tmp_path):
     adapter = FixtureAdapter()
-    result = _run(run_twin(_grok(), "exp-eight", adapter, root=tmp_path))
+    result = _run(run_twin(_grok(), "exp-four", adapter, root=tmp_path))
     assert result.status == Status.complete
-    assert len(result.run_a["trajectory"]) == 8
-    assert len(result.run_b["trajectory"]) == 8
-    assert [row["round"] for row in result.run_a["trajectory"]] == list(range(1, 9))
-    assert [row["round"] for row in result.run_b["trajectory"]] == list(range(1, 9))
-    stored_a = read_artifact("exp-eight", "run_a", root=tmp_path)
-    stored_b = read_artifact("exp-eight", "run_b", root=tmp_path)
-    assert len(stored_a["trajectory"]) == 8
-    assert len(stored_b["agent_logs"]) == 8 * len(observation_order(result.roster))
+    assert len(result.run_a["trajectory"]) == 4
+    assert len(result.run_b["trajectory"]) == 4
+    assert [row["round"] for row in result.run_a["trajectory"]] == list(range(1, 5))
+    assert [row["round"] for row in result.run_b["trajectory"]] == list(range(1, 5))
+    stored_a = read_artifact("exp-four", "run_a", root=tmp_path)
+    stored_b = read_artifact("exp-four", "run_b", root=tmp_path)
+    assert len(stored_a["trajectory"]) == 4
+    assert len(stored_b["agent_logs"]) == 4 * len(observation_order(result.roster))
 
 
 def test_intervention_only_on_b_from_applies_from_round(tmp_path):
@@ -111,7 +111,7 @@ def test_observation_order_buyers_then_competitor(tmp_path):
     assert expected[:5] == ["buyer_1", "buyer_2", "buyer_3", "buyer_4", "buyer_5"]
     assert expected[5] == "competitor"
     for run in ("A", "B"):
-        for round_n in range(1, 9):
+        for round_n in range(1, 5):
             chunk = [
                 agent_id
                 for rid, agent_id, rnd in result.call_order

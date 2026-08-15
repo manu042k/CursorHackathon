@@ -4,6 +4,7 @@ import { AnnouncementBar } from "@/components/AnnouncementBar";
 import { AppNav } from "@/components/AppNav";
 import "./globals.css";
 import "./shell.css";
+import "./paper.css";
 
 const display = Space_Grotesk({
   subsets: ["latin"],

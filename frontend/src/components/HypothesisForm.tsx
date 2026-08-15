@@ -1,46 +1,48 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ButtonPrimary } from "@/components/ButtonPrimary";
 import { Receipt } from "@/components/Receipt";
 import { RunProgress } from "@/components/RunProgress";
-import { ApiDownError, createExperiment, getHealth } from "@/lib/api";
-import type { Adapter, CreateExperimentRequest, RoundCompleteEvent } from "@/types/contracts";
-import { hypothesisSentence } from "@/lib/price";
+import { ApiDownError, createExperiment, getExperiment, getHealth } from "@/lib/api";
+import type {
+  Adapter,
+  CreateExperimentRequest,
+  DecisionEvent,
+  PriceSensitivity,
+  RoundCompleteEvent,
+} from "@/types/contracts";
+import { RUN_ROUNDS } from "@/types/contracts";
+import { forkedPrice, hypothesisSentence } from "@/lib/price";
 import { subscribeExperimentEvents } from "@/lib/sse";
 
-const GROK_BOT: CreateExperimentRequest = {
-  product_name: "Grok Bot",
-  product_description:
-    "Always-on AI teammates with their own cloud computer. They sign into your tools, finish jobs end to end, and only come back for approval.",
-  current_price: 120,
+const METHOD = {
   market_size: 30,
   competitor_count: 1,
-  competitor_price: 100,
-  buyer_price_sensitivity: "medium",
-  rounds: 8,
-  random_seed: 42,
-  variable_type: "price_change",
-  variable_delta: "+20%",
-  applies_from_round: 1,
-  adapter: "fixture",
+  rounds: 4 as const,
+  variable_type: "price_change" as const,
 };
 
+function clampRound(value: number): number {
+  if (!Number.isFinite(value)) return 1;
+  return Math.min(RUN_ROUNDS, Math.max(1, Math.round(value)));
+}
+
 export function HypothesisForm() {
-  const [productName, setProductName] = useState(GROK_BOT.product_name);
-  const [productDescription, setProductDescription] = useState(GROK_BOT.product_description);
-  const [currentPrice, setCurrentPrice] = useState(String(GROK_BOT.current_price));
-  const [competitorPrice, setCompetitorPrice] = useState(String(GROK_BOT.competitor_price));
-  const [delta, setDelta] = useState(GROK_BOT.variable_delta);
-  const [fromRound, setFromRound] = useState(String(GROK_BOT.applies_from_round));
-  const seed = GROK_BOT.random_seed;
+  const [productName, setProductName] = useState("");
+  const [productDescription, setProductDescription] = useState("");
+  const [currentPrice, setCurrentPrice] = useState("");
+  const [competitorPrice, setCompetitorPrice] = useState("");
+  const [sensitivity, setSensitivity] = useState<PriceSensitivity | "">("");
+  const [delta, setDelta] = useState("");
+  const [fromRound, setFromRound] = useState("");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [startedId, setStartedId] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [ticks, setTicks] = useState<RoundCompleteEvent[]>([]);
+  const [decisions, setDecisions] = useState<DecisionEvent[]>([]);
   const [failed, setFailed] = useState<string | null>(null);
   const [adapter, setAdapter] = useState<Adapter>("fixture");
   const [cursorReady, setCursorReady] = useState(false);
@@ -55,36 +57,67 @@ export function HypothesisForm() {
     if (!startedId) return;
     const stop = subscribeExperimentEvents(startedId, {
       onRound: (event) => setTicks((prev) => [...prev, event]),
-      onComplete: (id) => router.push(`/experiments/${id}`),
+      onDecision: (event) => setDecisions((prev) => [...prev, event]),
+      onComplete: (id) => {
+        window.setTimeout(() => router.push(`/experiments/${id}`), 1800);
+      },
       onFailed: (message) => setFailed(message),
     });
     return stop;
   }, [startedId, router]);
 
-  const price = Number.parseFloat(currentPrice) || 0;
-  const roundN = Number.parseInt(fromRound, 10) || 1;
-  const sentence = useMemo(
-    () => hypothesisSentence(productName || "this product", price, delta || "+0%", roundN),
-    [productName, price, delta, roundN]
-  );
+  useEffect(() => {
+    if (!startedId || failed) return;
+    const aDone = ticks.some((tick) => tick.run_id === "A" && tick.round === RUN_ROUNDS);
+    const bDone = ticks.some((tick) => tick.run_id === "B" && tick.round === RUN_ROUNDS);
+    if (!aDone || !bDone) return;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void getExperiment(startedId).then(({ status }) => {
+        if (!cancelled && status === 200) router.push(`/experiments/${startedId}`);
+      });
+    }, 2200);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [ticks, startedId, failed, router]);
+
+  const price = Number.parseFloat(currentPrice);
+  const roundN = clampRound(Number.parseInt(fromRound, 10));
+  const sentence = useMemo(() => {
+    if (!productName.trim() || !Number.isFinite(price) || !delta.trim()) {
+      return "Name the product and the one price change.";
+    }
+    return hypothesisSentence(productName.trim(), price, delta.trim(), roundN);
+  }, [productName, price, delta, roundN]);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
     setStartedId(null);
     setTicks([]);
+    setDecisions([]);
     setFailed(null);
     setPending(true);
+    if (!sensitivity || !Number.isFinite(price) || !Number.isFinite(Number.parseFloat(competitorPrice))) {
+      setError("Fill in the product, prices, and sensitivity.");
+      setPending(false);
+      return;
+    }
     const body: CreateExperimentRequest = {
-      ...GROK_BOT,
-      product_name: productName,
-      product_description: productDescription,
+      product_name: productName.trim(),
+      product_description: productDescription.trim(),
       current_price: price,
-      competitor_price: Number.parseFloat(competitorPrice) || 0,
-      variable_type: "price_change",
-      variable_delta: delta,
+      market_size: METHOD.market_size,
+      competitor_count: METHOD.competitor_count,
+      competitor_price: Number.parseFloat(competitorPrice),
+      buyer_price_sensitivity: sensitivity,
+      rounds: METHOD.rounds,
+      random_seed: Math.floor(Math.random() * 1_000_000_000),
+      variable_type: METHOD.variable_type,
+      variable_delta: delta.trim(),
       applies_from_round: roundN,
-      random_seed: seed,
       adapter,
     };
     try {
@@ -95,20 +128,31 @@ export function HypothesisForm() {
         err instanceof ApiDownError
           ? err.message
           : "API is not running.";
-      setError(`${message} Open the prepared Grok Bot paper.`);
+      setError(message);
     } finally {
       setPending(false);
     }
   }
 
   if (startedId) {
-    return <RunProgress ticks={ticks} failed={failed} />;
+    return (
+      <RunProgress
+        ticks={ticks}
+        decisions={decisions}
+        failed={failed}
+        basePrice={Number.isFinite(price) ? price : 0}
+        forkedPrice={forkedPrice(Number.isFinite(price) ? price : 0, delta || "+0%")}
+        appliesFromRound={roundN}
+        experimentId={startedId}
+        rounds={RUN_ROUNDS}
+      />
+    );
   }
 
   return (
     <form className="setup" onSubmit={onSubmit}>
       <div className="setup__story">
-        <p className="setup__kicker">You are testing</p>
+        <p className="setup__kicker">New experiment</p>
         <h1 className="setup__sentence">{sentence}</h1>
         <p className="setup__honesty">
           Divergence is causal inside this simulation — not a market forecast.
@@ -116,75 +160,115 @@ export function HypothesisForm() {
         <ButtonPrimary type="submit" disabled={pending}>
           Run this experiment
         </ButtonPrimary>
-        <p>
-          <Link href="/experiments/grok-bot-seed-42" className="button-secondary">
-            Open the prepared Grok Bot paper
-          </Link>
-        </p>
         {error ? (
           <p className="setup__error" role="alert">
-            {error}{" "}
-            <Link href="/experiments/grok-bot-seed-42" className="button-secondary">
-              Open the prepared Grok Bot paper
-            </Link>
+            {error}
           </p>
         ) : null}
       </div>
       <div className="setup__fields">
         <fieldset>
           <legend>Product</legend>
+          <p className="setup__group-hint">Enter the product and prices.</p>
           <label>
             Name
-            <input name="product_name" value={productName} onChange={(e) => setProductName(e.target.value)} />
+            <input
+              name="product_name"
+              value={productName}
+              onChange={(e) => setProductName(e.target.value)}
+              placeholder="Product name"
+              required
+            />
           </label>
           <label>
             Description
-            <input
+            <textarea
               name="product_description"
               value={productDescription}
               onChange={(e) => setProductDescription(e.target.value)}
+              placeholder="What the product does"
+              rows={3}
+              required
             />
           </label>
+          <div className="setup__row">
+            <label>
+              Your price
+              <input
+                name="current_price"
+                value={currentPrice}
+                onChange={(e) => setCurrentPrice(e.target.value)}
+                inputMode="decimal"
+                required
+              />
+            </label>
+            <label>
+              Competitor price
+              <input
+                name="competitor_price"
+                value={competitorPrice}
+                onChange={(e) => setCompetitorPrice(e.target.value)}
+                inputMode="decimal"
+                required
+              />
+            </label>
+          </div>
           <label>
-            Current price
-            <input
-              name="current_price"
-              value={currentPrice}
-              onChange={(e) => setCurrentPrice(e.target.value)}
-              inputMode="decimal"
-            />
-          </label>
-          <label>
-            Competitor price
-            <input
-              name="competitor_price"
-              value={competitorPrice}
-              onChange={(e) => setCompetitorPrice(e.target.value)}
-              inputMode="decimal"
-            />
+            Buyer price sensitivity
+            <select
+              name="buyer_price_sensitivity"
+              value={sensitivity}
+              onChange={(e) => setSensitivity(e.target.value as PriceSensitivity)}
+              required
+            >
+              <option value="" disabled>
+                Select
+              </option>
+              <option value="low">low</option>
+              <option value="medium">medium</option>
+              <option value="high">high</option>
+            </select>
           </label>
         </fieldset>
         <fieldset>
           <legend>The one change</legend>
+          <p className="setup__group-hint">Only this differs between Run A (baseline) and Run B.</p>
           <label>
             Type
             <input name="variable_type" value="price_change" readOnly />
           </label>
-          <label>
-            Delta
-            <input name="variable_delta" value={delta} onChange={(e) => setDelta(e.target.value)} />
-          </label>
-          <label>
-            From round
-            <input
-              name="applies_from_round"
-              value={fromRound}
-              onChange={(e) => setFromRound(e.target.value)}
-            />
-          </label>
+          <div className="setup__row">
+            <label>
+              Delta
+              <input
+                name="variable_delta"
+                value={delta}
+                onChange={(e) => setDelta(e.target.value)}
+                placeholder="+20%"
+                required
+              />
+            </label>
+            <label>
+              From round
+              <input
+                name="applies_from_round"
+                value={fromRound}
+                onChange={(e) => setFromRound(e.target.value)}
+                placeholder="1"
+                inputMode="numeric"
+                min={1}
+                max={RUN_ROUNDS}
+                required
+              />
+            </label>
+          </div>
+          <p className="setup__field-hint">Try +20%, −10%, or +5. Rounds are 1–{RUN_ROUNDS}.</p>
         </fieldset>
         <div className="method-strip" aria-label="Method">
           <p className="method-strip__label">Method</p>
+          <p className="setup__group-hint">
+            {RUN_ROUNDS} rounds · 30 buyers · 1 competitor · 0 other variables
+          </p>
           {cursorReady ? (
             <label className="method-strip__cursor">
               <input
@@ -197,7 +281,7 @@ export function HypothesisForm() {
           ) : null}
           <Receipt
             receipt={{
-              random_seed: seed,
+              random_seed: 0,
               prompt_hash: "—",
               roster_hash: "—",
               other_variables_changed: 0,

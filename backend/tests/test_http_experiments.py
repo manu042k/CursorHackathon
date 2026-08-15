@@ -20,7 +20,7 @@ PAYLOAD = {
     "competitor_count": 1,
     "competitor_price": 45,
     "buyer_price_sensitivity": "medium",
-    "rounds": 8,
+    "rounds": 4,
     "random_seed": 42,
     "variable_type": "price_change",
     "variable_delta": "+20%",
@@ -54,8 +54,8 @@ def test_post_returns_202_and_get_paper_when_complete(tmp_path, monkeypatch):
     payload = paper.json()
     assert payload["status"] == "complete"
     assert payload["id"] == body["id"]
-    assert payload["experiment"]["rounds"] == 8
-    assert len(payload["metrics"]["share_a"]) == 8
+    assert payload["experiment"]["rounds"] == 4
+    assert len(payload["metrics"]["share_a"]) == 4
     assert len(payload["logs"]["run_a"]) > 0
 
 
@@ -119,3 +119,26 @@ def test_cors_localhost_3000():
         },
     )
     assert response.headers.get("access-control-allow-origin") == "http://localhost:3000"
+
+
+def test_list_experiments_hides_golden_and_includes_created(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    app.state.registry = ExperimentRegistry()
+    app.state.adapter_factory = lambda: FixtureAdapter()
+    golden = tmp_path / "grok-bot-seed-42"
+    golden.mkdir()
+    (golden / "experiment.json").write_text(
+        '{"product_name": "Hidden Golden", "variable_delta": "+20%", "current_price": 120, "competitor_price": 100, "rounds": 8}',
+        encoding="utf-8",
+    )
+    client = TestClient(app)
+    created = client.post("/experiments", json=PAYLOAD)
+    experiment_id = created.json()["id"]
+    listed = client.get("/experiments")
+    assert listed.status_code == 200
+    ids = [row["id"] for row in listed.json()]
+    assert experiment_id in ids
+    assert "grok-bot-seed-42" not in ids
+    row = next(item for item in listed.json() if item["id"] == experiment_id)
+    assert row["product_name"] == "Acme Analytics"
+    assert row["variable_delta"] == "+20%"

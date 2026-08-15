@@ -31,7 +31,7 @@ DATA_DIR=
 cd backend
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev]"
+pip install -r requirements-dev.txt
 DEFAULT_ADAPTER=fixture uvicorn app.main:app --reload --port 8000
 ```
 
@@ -50,8 +50,7 @@ Python 3.10+. Install the SDK:
 ```bash
 cd backend
 source .venv/bin/activate
-pip install cursor-sdk
-pip install -e ".[dev]"
+pip install -r requirements-dev.txt
 ```
 
 Set `CURSOR_API_KEY` and `DEFAULT_ADAPTER=cursor` (or POST `"adapter": "cursor"`). The API process opens `AsyncClient.launch_bridge` for the lifetime of uvicorn and each decision is `AsyncAgent.prompt` with `tools=[]`.

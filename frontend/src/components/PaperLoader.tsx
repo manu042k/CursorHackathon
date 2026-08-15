@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { FindingPaper } from "@/components/FindingPaper";
 import golden from "@/data/grok-bot-seed-42.json";
 import { ApiDownError, getExperiment } from "@/lib/api";
@@ -94,6 +95,11 @@ export function PaperLoader({ id }: { id: string }) {
         <p className="finding__error" role="alert">
           {view.error}
         </p>
+        <p className="finding__next">
+          <Link href="/new" className="button-primary">
+            New experiment
+          </Link>
+        </p>
       </main>
     );
   }
@@ -103,6 +109,11 @@ export function PaperLoader({ id }: { id: string }) {
         <p className="shell-kicker">Finding</p>
         <h1 className="paper-header__title">No paper for {id}</h1>
         <p>This id is not in the record. Numbers from Grok Bot are not shown.</p>
+        <p className="finding__next">
+          <Link href="/new" className="button-primary">
+            New experiment
+          </Link>
+        </p>
       </main>
     );
   }

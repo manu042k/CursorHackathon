@@ -8,6 +8,9 @@ import os
 import threading
 import uuid
 
+from datetime import datetime, timezone
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -15,12 +18,26 @@ from fastapi.responses import StreamingResponse
 from app.agents.cursor_adapter import CursorSdkAdapter
 from app.agents.fixture import FixtureAdapter
 from app.attribution import attribute_result
-from app.contracts import Adapter, CreateExperimentRequest, CreateExperimentResponse, HealthResponse, Status
+from app.contracts import (
+    Adapter,
+    CreateExperimentRequest,
+    CreateExperimentResponse,
+    ExperimentListItem,
+    HealthResponse,
+    Status,
+)
 from app import settings
 from app.cursor_client import cursor_lifespan
 from app.paper import paper_from_disk, paper_from_result
 from app.registry import ExperimentRegistry
-from app.store import ARTIFACT_NAMES, read_artifact, write_artifact
+from app.store import (
+    ARTIFACT_NAMES,
+    HIDDEN_EXPERIMENT_IDS,
+    disk_status,
+    list_experiment_folders,
+    read_artifact,
+    write_artifact,
+)
 from app.twin_runner import run_twin
 
 app = FastAPI(title="Counterfactual Replay", version="0.1.0", lifespan=cursor_lifespan)
@@ -58,6 +75,9 @@ def _execute(experiment_id: str, body: CreateExperimentRequest) -> None:
             },
         )
 
+    def on_decision(payload):
+        registry.append_event(experiment_id, "decision", payload)
+
     try:
         result = asyncio.run(
             run_twin(
@@ -65,6 +85,7 @@ def _execute(experiment_id: str, body: CreateExperimentRequest) -> None:
                 experiment_id,
                 _adapter_for(body),
                 on_round=on_round,
+                on_decision=on_decision,
             )
         )
         registry.set_status(
@@ -97,6 +118,62 @@ def create_experiment(body: CreateExperimentRequest) -> CreateExperimentResponse
     write_artifact(experiment_id, "experiment", body.model_dump(mode="json"))
     threading.Thread(target=_execute, args=(experiment_id, body), daemon=True).start()
     return CreateExperimentResponse(id=experiment_id, status=Status.created)
+
+
+def _list_item_from_folder(folder: Path, registry: ExperimentRegistry) -> ExperimentListItem | None:
+    experiment_path = folder / "experiment.json"
+    if not experiment_path.is_file():
+        return None
+    try:
+        body = json.loads(experiment_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+    status = registry.status.get(folder.name)
+    if status is None:
+        status = Status(disk_status(folder))
+    updated = datetime.fromtimestamp(experiment_path.stat().st_mtime, tz=timezone.utc)
+    return ExperimentListItem(
+        id=folder.name,
+        status=status,
+        product_name=str(body.get("product_name") or "Untitled"),
+        variable_delta=str(body.get("variable_delta") or ""),
+        current_price=float(body.get("current_price") or 0),
+        competitor_price=float(body.get("competitor_price") or 0),
+        rounds=int(body.get("rounds") or 4),
+        updated_at=updated.isoformat(),
+    )
+
+
+@app.get("/experiments", response_model=list[ExperimentListItem])
+def list_experiments() -> list[ExperimentListItem]:
+    registry: ExperimentRegistry = app.state.registry
+    items: list[ExperimentListItem] = []
+    seen: set[str] = set()
+    for folder in list_experiment_folders():
+        item = _list_item_from_folder(folder, registry)
+        if item is None:
+            continue
+        items.append(item)
+        seen.add(item.id)
+    for experiment_id, status in registry.status.items():
+        if experiment_id in seen or experiment_id in HIDDEN_EXPERIMENT_IDS:
+            continue
+        paper = registry.papers.get(experiment_id)
+        experiment = paper.experiment if paper else None
+        items.insert(
+            0,
+            ExperimentListItem(
+                id=experiment_id,
+                status=status,
+                product_name=experiment.product_name if experiment else "Untitled",
+                variable_delta=experiment.variable_delta if experiment else "",
+                current_price=experiment.current_price if experiment else 0,
+                competitor_price=experiment.competitor_price if experiment else 0,
+                rounds=int(experiment.rounds) if experiment else 4,
+                updated_at=datetime.now(timezone.utc).isoformat(),
+            ),
+        )
+    return items
 
 
 @app.get("/experiments/{experiment_id}")
@@ -135,6 +212,7 @@ async def experiment_events(experiment_id: str):
                 idx += 1
                 yield f"event: {name}\ndata: {json.dumps(data)}\n\n"
             if finished:
+                await asyncio.sleep(0.2)
                 break
             await asyncio.sleep(0.05)
 

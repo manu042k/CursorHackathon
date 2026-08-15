@@ -30,7 +30,7 @@ def _experiment() -> CreateExperimentRequest:
             "competitor_count": 1,
             "competitor_price": 45,
             "buyer_price_sensitivity": "medium",
-            "rounds": 8,
+            "rounds": 4,
             "random_seed": 42,
             "variable_type": "price_change",
             "variable_delta": "+20%",

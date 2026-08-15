@@ -18,8 +18,8 @@ def test_fixture_end_to_end_paper_and_trace(tmp_path, monkeypatch):
     paper = _wait_paper(client, created.json()["id"]).json()
     assert paper["experiment"]["adapter"] == "fixture"
     assert paper["receipt"]["adapter"] == "fixture"
-    assert len(paper["metrics"]["share_a"]) == 8
-    assert len(paper["metrics"]["share_b"]) == 8
+    assert len(paper["metrics"]["share_a"]) == 4
+    assert len(paper["metrics"]["share_b"]) == 4
     logs = paper["logs"]["run_b"]
     r4 = [row for row in logs if row["round"] == 4]
     assert any(row["agent_id"] == "buyer_3" for row in r4)

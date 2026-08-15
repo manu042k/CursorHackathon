@@ -14,6 +14,12 @@ export function PaperHeader({ paper }: { paper: ExperimentPaper }) {
   );
 }
 
+function fmtPp(value: number): string {
+  const rounded = Math.round(value * 10) / 10;
+  const text = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+  return `${rounded > 0 ? "+" : ""}${text}pp`;
+}
+
 export function MetricCards({ paper }: { paper: ExperimentPaper }) {
   const share = paper.metrics.final_share_delta_pp;
   const mrr = paper.metrics.final_mrr_delta;
@@ -24,8 +30,7 @@ export function MetricCards({ paper }: { paper: ExperimentPaper }) {
     <ul className="metric-cards">
       <li className={share < 0 ? "metric-cards__item metric-cards__item--danger" : "metric-cards__item metric-cards__item--success"}>
         <p className="metric-cards__value">
-          {share > 0 ? "+" : ""}
-          {share}pp
+          {fmtPp(share)}
         </p>
         <p className="metric-cards__verb">
           share <strong>{shareVerb}</strong>
@@ -34,7 +39,7 @@ export function MetricCards({ paper }: { paper: ExperimentPaper }) {
       <li className={mrr > 0 ? "metric-cards__item metric-cards__item--success" : "metric-cards__item metric-cards__item--danger"}>
         <p className="metric-cards__value">
           {mrr >= 0 ? "+$" : "-$"}
-          {Math.abs(mrr)}
+          {Math.round(Math.abs(mrr)).toLocaleString()}
         </p>
         <p className="metric-cards__verb">
           MRR <strong>{mrrVerb}</strong>

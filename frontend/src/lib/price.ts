@@ -14,5 +14,11 @@ export function hypothesisSentence(
   fromRound: number
 ): string {
   const forked = forkedPrice(price, delta);
+  if (forked < price) {
+    return `Lower ${product} from $${price} to $${forked} starting round ${fromRound}.`;
+  }
+  if (forked === price) {
+    return `Hold ${product} at $${price} starting round ${fromRound}.`;
+  }
   return `Raise ${product} from $${price} to $${forked} starting round ${fromRound}.`;
 }

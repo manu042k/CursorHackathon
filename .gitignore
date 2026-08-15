@@ -14,6 +14,8 @@ backend/*.egg-info/
 
 backend/.env
 
+data/experiments/exp_*/
+
 .idea/
 .idea/*
 

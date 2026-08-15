@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 ARTIFACT_NAMES = ("experiment", "roster", "run_a", "run_b", "attribution")
+HIDDEN_EXPERIMENT_IDS = frozenset({"grok-bot-seed-42"})
 
 
 def data_root() -> Path:
@@ -51,3 +52,19 @@ def read_artifact(experiment_id: str, name: str, root: Path | None = None) -> An
         raise ValueError(f"unknown artifact {name}")
     path = experiment_dir(experiment_id, root) / f"{name}.json"
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def disk_status(folder: Path) -> str:
+    if (folder / "attribution.json").is_file() and (folder / "run_b.json").is_file():
+        return "complete"
+    if (folder / "run_a.json").is_file():
+        return "running_b"
+    return "created"
+
+
+def list_experiment_folders(root: Path | None = None) -> list[Path]:
+    base = root or data_root()
+    if not base.exists():
+        return []
+    folders = [path for path in base.iterdir() if path.is_dir() and path.name not in HIDDEN_EXPERIMENT_IDS]
+    return sorted(folders, key=lambda path: path.stat().st_mtime, reverse=True)
