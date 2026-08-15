@@ -62,10 +62,11 @@ def _execute(experiment_id: str, body: CreateExperimentRequest) -> None:
         )
         if result.status == Status.complete:
             registry.set_status(experiment_id, Status.attributing)
+        paper = paper_from_result(result)
         attribution = attribute_result(result)
         if attribution is not None:
+            attribution["summary_narrative"] = paper.summary_narrative.model_dump(mode="json")
             write_artifact(experiment_id, "attribution", attribution)
-        paper = paper_from_result(result)
         registry.put_paper(paper)
         if result.error:
             registry.errors[experiment_id] = result.error
