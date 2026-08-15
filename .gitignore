@@ -19,3 +19,10 @@ data/experiments/exp_*/
 .idea/
 .idea/*
 
+# Personal Cursor skills (kept local; synced from private archie repo)
+.cursor/skills/
+.cursor/commands/archie.md
+
+# Local-only data (never share with the team repo)
+.local-data/
+
