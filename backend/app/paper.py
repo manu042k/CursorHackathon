@@ -16,7 +16,8 @@ from app.contracts import (
     Status,
     SummaryNarrative,
 )
-from app.store import read_artifact
+from app.attribution import attribute_result, attribute_runs
+from app.store import read_artifact, write_artifact
 from app.twin_runner import TwinResult
 
 
@@ -56,7 +57,14 @@ def stub_receipt(experiment: CreateExperimentRequest, roster: Roster) -> Receipt
     )
 
 
+def _paper_rounds(raw: list) -> list:
+    allowed = {"round", "delta", "top_contributors"}
+    return [{key: row[key] for key in allowed if key in row} for row in raw]
+
+
 def paper_from_result(result: TwinResult) -> ExperimentPaper:
+    attribution = attribute_result(result)
+    divergence = _paper_rounds(attribution["divergence_by_round"]) if attribution else []
     return ExperimentPaper(
         id=result.id,
         status=result.status,
@@ -64,7 +72,7 @@ def paper_from_result(result: TwinResult) -> ExperimentPaper:
         roster=result.roster,
         receipt=stub_receipt(result.experiment, result.roster),
         metrics=metrics_from_runs(result.run_a, result.run_b),
-        divergence_by_round=[],
+        divergence_by_round=divergence,
         summary_narrative=SummaryNarrative(text="", citations=[]),
         logs=ExperimentLogs(
             run_a=result.run_a.get("agent_logs", []),
@@ -86,9 +94,11 @@ def paper_from_disk(experiment_id: str, root: Path | None = None) -> ExperimentP
     divergence = []
     try:
         attribution = read_artifact(experiment_id, "attribution", root=root)
-        divergence = attribution.get("divergence_by_round", [])
+        divergence = _paper_rounds(attribution.get("divergence_by_round", []))
     except FileNotFoundError:
-        pass
+        attribution = attribute_runs(run_a, run_b, roster)
+        write_artifact(experiment_id, "attribution", attribution, root=root)
+        divergence = _paper_rounds(attribution.get("divergence_by_round", []))
     narrative = SummaryNarrative(text="", citations=[])
     try:
         attribution = read_artifact(experiment_id, "attribution", root=root)

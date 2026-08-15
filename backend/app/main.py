@@ -10,6 +10,7 @@ from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.agents.fixture import FixtureAdapter
+from app.attribution import attribute_result
 from app.contracts import CreateExperimentRequest, CreateExperimentResponse, Status
 from app.paper import paper_from_disk, paper_from_result
 from app.registry import ExperimentRegistry
@@ -39,6 +40,11 @@ def _execute(experiment_id: str, body: CreateExperimentRequest) -> None:
             experiment_id,
             Status.running_b if result.status != Status.failed else Status.failed,
         )
+        if result.status == Status.complete:
+            registry.set_status(experiment_id, Status.attributing)
+        attribution = attribute_result(result)
+        if attribution is not None:
+            write_artifact(experiment_id, "attribution", attribution)
         paper = paper_from_result(result)
         registry.put_paper(paper)
         if result.error:
