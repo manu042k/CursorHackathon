@@ -29,6 +29,7 @@ DATABASE_URL=
 - `CURSOR_MODEL` — model id reported on `/health` and the paper receipt
 - `DEFAULT_ADAPTER=fixture` — fixture-only demo; no Cursor calls
 - `DATABASE_URL` — Supabase session-pooler Postgres URI (`sslmode=require`). JSON under `data/experiments/` is a paper export, not the live log. Never put the anon or service-role key in the frontend.
+- Decision reasons are 40–400 characters (`MAX_REASON_CHARS`). Round history in the prompt is truncated from the oldest round first (`MAX_HISTORY_CHARS`, default 800).
 - Research (US-A8, `adapter=cursor`): Reddit + web search only, then hygiene filters (ADR-12). Optional: `RESEARCH_MAX_AGE_DAYS`, `RESEARCH_MIN_SCORE`, `RESEARCH_MIN_COMMENTS`, `RESEARCH_MAX_ITEMS_PER_SOURCE`, `RESEARCH_MIN_KEEP`. Fixture adapter skips fetch.
 - Ports stay 8000 / 3000 unless you change the start commands
 

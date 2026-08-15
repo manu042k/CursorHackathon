@@ -25,3 +25,5 @@ CURSOR_MODEL = os.environ.get("CURSOR_MODEL", "composer-2.5")
 DEFAULT_ADAPTER = os.environ.get("DEFAULT_ADAPTER", "fixture")
 # Supabase session pooler URI (port 5432) with sslmode=require. Empty → in-memory ledger.
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
+MAX_REASON_CHARS = 400
+MAX_HISTORY_CHARS = 800

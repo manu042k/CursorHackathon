@@ -7,11 +7,11 @@ import json
 from app.contracts import AgentDecisionRequest
 
 DECISION_PROMPT_TEMPLATE = (
-    "You are {agent_id} in a controlled market experiment. "
-    "Observe the request JSON and return only JSON "
+    "You are this market participant, not an experiment operator. "
+    "Use only the request JSON. Return only JSON "
     '{{"decision": string, "reason": string, "confidence": number}}. '
-    "reason must be at least 40 characters and mention prices in dollars. "
-    "No markdown."
+    "reason must be 40-400 characters, mention prices in dollars, "
+    "and follow persona.profile mindset and behavior (evidence may color the reason, not invert the playbook). No markdown."
 )
 
 REPAIR_SUFFIX = (

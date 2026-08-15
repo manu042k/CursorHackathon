@@ -8,6 +8,7 @@ from typing import Any, Protocol
 from app.contracts import AgentDecision, AgentDecisionRequest
 
 REASON_MIN_LEN = 40
+REASON_MAX_LEN = 400
 GENERIC_DENYLIST = frozenset(
     {
         "i decided to churn",
@@ -59,6 +60,8 @@ def validate_decision(payload: AgentDecision | dict[str, Any] | str) -> AgentDec
         raise DecisionError("generic denylist reason")
     if len(reason) < REASON_MIN_LEN:
         raise DecisionError("reason too short")
+    if len(reason) > REASON_MAX_LEN:
+        raise DecisionError("reason too long")
     return decision
 
 
