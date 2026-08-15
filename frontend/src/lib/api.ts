@@ -10,6 +10,25 @@ export class ApiDownError extends Error {
   }
 }
 
+export async function getExperiment(id: string): Promise<{
+  status: number;
+  body: unknown;
+}> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}/experiments/${id}`);
+  } catch {
+    throw new ApiDownError();
+  }
+  let body: unknown = null;
+  try {
+    body = await response.json();
+  } catch {
+    body = null;
+  }
+  return { status: response.status, body };
+}
+
 export async function createExperiment(
   body: CreateExperimentRequest
 ): Promise<CreateExperimentResponse> {

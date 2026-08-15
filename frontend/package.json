@@ -14,7 +14,8 @@
     "check:d2": "node scripts/check-d2.mjs",
     "check:d3": "node scripts/check-d3.mjs",
     "check:d4": "node scripts/check-d4.mjs",
-    "check:d5": "node scripts/check-d5.mjs"
+    "check:d5": "node scripts/check-d5.mjs",
+    "check:d6": "node scripts/check-d6.mjs"
   },
   "dependencies": {
     "next": "^15.1.0",
