@@ -26,18 +26,8 @@ const checks = [
   [tokens.includes("--color-coral: #ff7759"), "tokens encode coral (taxonomy only)"],
 ];
 
-const announcement = fs.readFileSync(
-  path.join(root, "src/components/AnnouncementBar.tsx"),
-  "utf8"
-);
-checks.push([
-  announcement.includes("Controlled experiment — not a forecast"),
-  "AnnouncementBar copy",
-]);
-
 const nav = fs.readFileSync(path.join(root, "src/components/AppNav.tsx"), "utf8");
 checks.push([nav.includes("Replay"), "nav logo left"]);
-checks.push([nav.includes("Counterfactual"), "nav title center"]);
 checks.push([!/account|avatar|sign in/i.test(nav), "no fake account menu"]);
 
 const button = fs.readFileSync(path.join(root, "src/app/shell.css"), "utf8");

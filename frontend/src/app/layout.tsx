@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { Space_Grotesk, Inter, IBM_Plex_Mono } from "next/font/google";
-import { AnnouncementBar } from "@/components/AnnouncementBar";
 import { AppNav } from "@/components/AppNav";
 import "./globals.css";
 import "./shell.css";
@@ -25,14 +24,13 @@ const mono = IBM_Plex_Mono({
 
 export const metadata = {
   title: "Counterfactual Replay",
-  description: "Controlled experiment — not a forecast",
+  description: "Twin-run market simulation",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${display.variable} ${body.variable} ${mono.variable}`}>
-        <AnnouncementBar />
+      <body className={`${body.className} ${body.variable} ${display.variable} ${mono.variable} antialiased`}>
         <AppNav />
         {children}
       </body>

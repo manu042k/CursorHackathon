@@ -1,11 +1,13 @@
 import type { ButtonHTMLAttributes } from "react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type Props = ButtonHTMLAttributes<HTMLButtonElement>;
 
 export function ButtonPrimary({ children, className = "", ...props }: Props) {
   return (
-    <button type="button" className={`button-primary ${className}`.trim()} {...props}>
+    <Button className={cn(className)} {...props}>
       {children}
-    </button>
+    </Button>
   );
 }
