@@ -1,0 +1,112 @@
+.setup {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-section) var(--space-xxl);
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: var(--space-section) var(--space-xl);
+}
+
+.setup__kicker {
+  margin: 0 0 var(--space-md);
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  letter-spacing: 0.28px;
+  color: var(--color-muted);
+}
+
+.setup__sentence {
+  margin: 0 0 var(--space-xl);
+  font-family: var(--font-display);
+  font-size: clamp(32px, 5vw, 48px);
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.setup__error {
+  color: var(--color-error);
+  margin-top: var(--space-lg);
+}
+
+.setup__started {
+  margin-top: var(--space-lg);
+  color: var(--color-body-muted);
+}
+
+.setup__fields fieldset {
+  border: 0;
+  margin: 0 0 var(--space-xl);
+  padding: 0;
+}
+
+.setup__fields legend {
+  font-family: var(--font-display);
+  font-size: var(--text-feature);
+  margin-bottom: var(--space-lg);
+}
+
+.setup__fields label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-lg);
+  font-size: var(--text-caption);
+  color: var(--color-slate);
+}
+
+.setup__fields input {
+  border: 0;
+  border-bottom: 1px solid var(--color-hairline);
+  border-radius: 0;
+  padding: var(--space-sm) 0;
+  font-size: var(--text-body);
+  color: var(--color-ink);
+  background: transparent;
+}
+
+.setup__fields input:focus {
+  outline: none;
+  border-bottom-color: var(--color-form-focus);
+}
+
+.setup__fields input[readonly] {
+  color: var(--color-ink);
+}
+
+.method-strip {
+  border-top: 1px solid var(--color-hairline);
+  padding-top: var(--space-lg);
+}
+
+.method-strip__label {
+  margin: 0 0 var(--space-xs);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: 0.28px;
+  color: var(--color-muted);
+}
+
+.method-strip p:last-child {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  letter-spacing: 0.28px;
+}
+
+.button-secondary {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  background: none;
+  border: 0;
+  padding: 8px 0;
+  font-size: var(--text-body);
+}
+
+@media (max-width: 800px) {
+  .setup {
+    grid-template-columns: 1fr;
+    padding: var(--space-xl);
+  }
+}
